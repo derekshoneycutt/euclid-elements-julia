@@ -3,12 +3,7 @@ using Symbolics;
 using Latexify;
 using GLMakie;
 
-# Calculate distance
-function distance(p1::Point2, p2::Point2)
-    √((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
-end;
-
-# Find a point that will continue the given line, and the slope of the line
+# Find a point that will continue the given line
 function continue_line(A::Point2, B::Point2, adjust_x=5)
     v = B - A
     u = v / norm(v)
@@ -20,7 +15,7 @@ end;
 
 # I.1 Find the third point that constructs an equilateral triangle from 2 points
 function equilateral_from(A::Point2, B::Point2)
-    #basically, the idea is pull the vector and rotate it 60 degrees to find the 3rd equaliteral point
+    #basically, the idea is pull the vector and rotate it 60° to find the 3rd equaliteral point
     v = B-A
     θ = π/3
     x, y = [cos(θ) -sin(θ); sin(θ) cos(θ)]*v + A
@@ -34,17 +29,17 @@ function equal_line(A::Point2, B::Point2, C::Point2)
     D = equilateral_from(A,B)
 
     #Get straight lines AE, BF, straight from DA, DB
-    r_BC = distance(B,C)
+    r_BC = norm(B-C)
     E = continue_line(A, D, r_BC + 2)
     F = continue_line(B, D, r_BC + 2)
 
     # Circle CGH with center B, radius BC
-    r_CGH = distance(B,C)
+    r_CGH = norm(B-C)
     G = continue_line(D, B, r_CGH)
 
     # Circle GKL with center D, radius DG (math!)
-    r_GKL = distance(D,G)
-    L = continue_line(D, A, r_GKL - distance(D,A))
+    r_GKL = norm(D-G)
+    L = continue_line(D, A, r_GKL - norm(D-A))
 
     L
 end;
@@ -56,8 +51,9 @@ function cut_line(A1::Point2, B1::Point2, A2::Point2, B2::Point2)
     D = equal_line(A1, A2, B2)
     
     # Define circle DEF at center A, with radius AD
-    r_DEF = distance(A1,D)
-    v = B1 - A
+    r_DEF = norm(A1-D)
+    v = B1 - A1
     u = v / norm(v)
-    E = A1 + r_DEF*u
+    E_x,E_y = A1 + r_DEF*u
+    Point2(E_x,E_y)
 end
