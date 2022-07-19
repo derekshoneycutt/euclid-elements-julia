@@ -20,16 +20,10 @@ end;
 
 # I.1 Find the third point that constructs an equilateral triangle from 2 points
 function equilateral_from(A::Point2, B::Point2)
-    r = distance(A, B)
-    if B[1] == A[1]
-        θ = B[1] > A[1] ? 3π/2 : π/2
-    else
-        θ = acos(((B[1]-A[1])^2 + r^2 - (B[2]-A[2])^2) / (2*(B[1]-A[1])*r))
-    end
-    if B[2] < A[2]
-        θ = -θ
-    end
-    x, y = [cos(θ) -sin(θ); sin(θ) cos(θ)]*[ r/2, (r*√3)/2 ] + A
+    #basically, the idea is pull the vector and rotate it 60 degrees to find the 3rd equaliteral point
+    v = B-A
+    θ = π/3
+    x, y = [cos(θ) -sin(θ); sin(θ) cos(θ)]*v + A
     Point2(x, y)
 end;
 
