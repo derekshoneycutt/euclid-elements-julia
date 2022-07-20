@@ -51,7 +51,7 @@ function EquilateralTriangle_from(A::Point2, B::Point2)
 end;
 
 # Draw the lines for an EquilateralTriangle previously defined
-function draw_lines(triangle::EquilateralTriangle, color=:pink)
+function draw_lines(triangle::EquilateralTriangle; color=:pink)
     lines!(Circle(triangle.A, triangle.r), color=color)
     lines!(Circle(triangle.B, triangle.r), color=color)
     lines!([triangle.A, triangle.B], color=color)
@@ -60,7 +60,8 @@ function draw_lines(triangle::EquilateralTriangle, color=:pink)
     lines!([D_D, triangle.B], color=color)
 end
 
-function draw_lines(triangle::Observable{EquilateralTriangle}, color=:pink)
+# Draw lines given an observable equilateral triangle
+function draw_lines(triangle::Observable{EquilateralTriangle}; color=:pink)
     lines!(@lift(Circle(Point2f(($triangle).A[1],($triangle).A[2]), ($triangle).r)), color=color)
     lines!(@lift(Circle(Point2f(($triangle).B[1],($triangle).B[2]), ($triangle).r)), color=color)
     lines!(@lift([($triangle).A, ($triangle).B]), color=color)
@@ -126,9 +127,9 @@ function EqualLines_from(A::Point2, B::Point2, C::Point2)
 end
 
 
-# Draw the lines for an EquilateralTriangle previously defined
-function draw_lines(lines::EqualLines, color=:pink)
-    draw_lines(lines.triangle)
+# Draw the lines for an EqualLines previously defined
+function draw_lines(lines::EqualLines; color=:pink)
+    draw_lines(lines.triangle, color=color)
     D = Point(lines.triangle)
 
     lines!([lines.A,lines.E], color=color)
@@ -138,8 +139,9 @@ function draw_lines(lines::EqualLines, color=:pink)
     lines!([lines.A,D], color=color)
 end
 
-function draw_lines(lines::Observable{EqualLines}, color=:pink)
-    draw_lines(@lift(($lines).triangle))
+# Draw the lines given an observable EqualLines
+function draw_lines(lines::Observable{EqualLines}; color=:pink)
+    draw_lines(@lift(($lines).triangle), color=color)
     D = @lift(Point(($lines).triangle))
 
 
@@ -160,4 +162,61 @@ function cut_line(A1::Point2, B1::Point2, A2::Point2, B2::Point2)
     u = v / norm(v)
     E_x,E_y = A1 + r_DEF*u
     Point2(E_x,E_y)
+end
+
+
+# Representation of a cut line equal to another line
+struct CutLine
+    A::Point2
+    B::Point2
+    C1::Point2
+    C2::Point2
+    D::EqualLines
+    r::Float32
+    v::Point2
+    u::Point2
+    E::Point2
+end
+
+# Get a point that completes a CutLine representation
+function Point(cut::CutLine)
+    return cut.E
+end
+
+# I.3 Find the point that would cut a line equal 
+function CutLine_from(A::Point2, B::Point2, C1::Point2, C2::Point2)
+    D = EqualLines_from(A, C1, C2)
+
+    r = norm(A-Point(D))
+    v = B - A
+    u = v / norm(v)
+    E = A + r*u
+
+    CutLine(A, B, C1, C2, D, r, v, u, E)
+end
+
+# Draw the background lines for cutting a line equal to another
+function draw_lines(cut::CutLine; color=:pink)
+    # Draw all those lines.... meeeep
+    draw_lines(cut.D, color=color)
+
+    lines!([cut.A,cut.B], color=color)
+    lines!([cut.C1,cut.C2], color=color)
+    lines!([cut.A,cut.E], color=color)
+    lines!([cut.A,Point(cut.D)], color=color)
+    lines!(Circle(cut.A, cut.r),color=color)
+    lines!([cut.A,cut.E], color=color)
+end
+
+# Draw the background lines according to observable CutLine data
+function draw_lines(cut::Observable{CutLine}; color=:pink)
+    # Draw all those lines.... meeeep
+    draw_lines(@lift(($cut).D), color=color)
+
+    lines!(@lift([($cut).A,($cut).B]), color=color)
+    lines!(@lift([($cut).C1,($cut).C2]), color=color)
+    lines!(@lift([($cut).A,($cut).E]), color=color)
+    lines!(@lift([($cut).A,Point(($cut).D)]), color=color)
+    lines!(@lift(Circle(($cut).A, ($cut).r)),color=color)
+    lines!(@lift([($cut).A,($cut).E]), color=color)
 end
