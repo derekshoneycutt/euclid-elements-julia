@@ -11,4 +11,6 @@ This repository is broken up into folders based on the books of Euclid's Element
 
 Each proposition is primarily done with one, very simple unit version to figure out Euclid's arguments. It is then applied with various rotations, etc. if not already covered, and from this, a function is pulled out. Not all propositions will have a unique function pulled out to demonstrate the argument--mostly those ending with QEF--that is, where the proposition is to construct something. All propositions are finished with an attempt at creating an animation that either shows the proof or shows a rotating, dynamic version of the construction.
 
-`EuclidElements.jl`, the file, largely contains a reduced version of each function developed based on Euclid's propositions.
+`EuclidElements.jl` is a shorthand way to include a bunch of utility stuffs
+`EuclidMath-*.jl` are individual files in which specific mathematical functions derived from Euclid's Elements are defined
+`EuclidGraph-*.jl` are individual files for code used in graphing Euclid's Elements, including and especially animations
