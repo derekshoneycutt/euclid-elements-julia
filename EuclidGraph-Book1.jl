@@ -2,226 +2,193 @@ include("EuclidMath-Book1.jl")
 include("EuclidGraph-Core.jl")
 
 
-# Representation of an equilateral triangle in space
-struct EquilateralTriangle
-    A::Point2
-    B::Point2
-    r::Float32
-    v::Point2
-    θ::Float32
-    x::Float32
-    y::Float32
+""" Describe a representation of drawing an equilateral triangle via Euclid """
+struct EuclidEquilTri
+    A::Point2f0
+    B::Point2f0
+    C::Point2f0
+    BCD::EuclidCircle
+    ACE::EuclidCircle
+    AC::EuclidLine
+    BC::EuclidLine
 end
 
-# Get a point from an equilateral triangle representation
-function Point(tri::EquilateralTriangle)
-    return Point2f(tri.x,tri.y)
+""" Get the point that forms an equilateral triangle on a previously given line """
+function Point(tri::EuclidEquilTri)
+    tri.C
 end
 
-# I.1 Find the third point that constructs an equilateral triangle from 2 points
-function EquilateralTriangle_from(A::Point2, B::Point2)
-    #basically, the idea is pull the vector and rotate it 60° to find the 3rd equaliteral point
-    # this is really what Euclid does!
-    v = B-A
-    r = norm(v)
-    θ = π/3
-    x, y = [cos(θ) -sin(θ); sin(θ) cos(θ)]*v + A
-    EquilateralTriangle(A, B, r, v, θ, x, y)
-end;
+""" Construct an equilateral triangle on top of a given line, via Euclid """
+function equilateral_triangle(A::Point2f0, B::Point2f0;
+                                cursorcolor=:red, color=:black, linewidth::Float32=1f0)
+    # Get the radius
+    r = norm(B-A)
 
-# Draw the lines for an EquilateralTriangle previously defined
-function draw_lines(triangle::EquilateralTriangle; color=:pink)
-    lines!(Circle(triangle.A, triangle.r), color=color)
-    lines!(Circle(triangle.B, triangle.r), color=color)
-    lines!([triangle.A, triangle.B], color=color)
-    D_D = Point(triangle)
-    lines!([D_D, triangle.A], color=color)
-    lines!([D_D, triangle.B], color=color)
+    # Draw the circles and then the lines that Euclid describes
+    BCD = whole_circle(A, r, -acos((B[1]-A[1])/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    ACE = whole_circle(B, r, acos((A[1]-B[1])/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    C = equilateral_from(A, B)
+    AC = straight_line(A, C, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    BC = straight_line(B, C, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+
+    EuclidEquilTri(A, B, C, BCD, ACE, AC, BC)
 end
 
-# Draw lines given an observable equilateral triangle
-function draw_lines(triangle::Observable{EquilateralTriangle}; color=:pink)
-    lines!(@lift(Circle(Point2f(($triangle).A[1],($triangle).A[2]), ($triangle).r)), color=color)
-    lines!(@lift(Circle(Point2f(($triangle).B[1],($triangle).B[2]), ($triangle).r)), color=color)
-    lines!(@lift([($triangle).A, ($triangle).B]), color=color)
-    lines!(@lift([Point($triangle), ($triangle).A]), color=color)
-    lines!(@lift([Point($triangle), ($triangle).B]), color=color)
+""" Fill out the drawing of an equilateral triangle by Euclid """
+function fill_equilateral(tri::EuclidEquilTri)
+    fill_circle(tri.BCD)
+    fill_circle(tri.ACE)
+    fill_line(tri.AC)
+    fill_line(tri.BC)
 end
 
-# Define an observable group of colors to draw an equilateral triangle
-struct EquilateralTriangleColors
-    CircleA::Observable{RGBA}
-    CircleB::Observable{RGBA}
-    AC::Observable{RGBA}
-    BC::Observable{RGBA}
-    FillPoly::Observable{RGBA}
+ """Actual inside drawing method for animating drawing an equilateral triangle by Euclid"""
+function animate_equilateral_(tri::EuclidEquilTri, hide_until::Float32, max_at::Float32, t::Float32;
+                                fade_start::Float32=0f0, fade_end::Float32=0f0)
+    d(n, ofn=4) = hide_until + (n-1)*(max_at - hide_until)/ofn
+    animate_circle(tri.BCD, d(1), d(2), t, fade_start=fade_start, fade_end=fade_end)
+    animate_circle(tri.ACE, d(2), d(3), t, fade_start=fade_start, fade_end=fade_end)
+    animate_line(tri.AC, d(3), d(4), t, fade_start=fade_start, fade_end=fade_end)
+    animate_line(tri.BC, d(4), d(5), t, fade_start=fade_start, fade_end=fade_end)
 end
 
-# Initiate an observable group of colors according to some basic definitions
-function init_equilateral_colors(hide::Bool, linecol::RGB, fillcol::RGB)
-    EquilateralTriangleColors(
-        Observable(RGBA(linecol[1], linecol[2], linecol[3], hide ? 0.0 : 1.0)),
-        Observable(RGBA(linecol[1], linecol[2], linecol[3], hide ? 0.0 : 1.0)),
-        Observable(RGBA(linecol[1], linecol[2], linecol[3], hide ? 0.0 : 1.0)),
-        Observable(RGBA(linecol[1], linecol[2], linecol[3], hide ? 0.0 : 1.0)),
-        Observable(RGBA(fillcol[1], fillcol[2], fillcol[3], hide ? 0.0 : 1.0)))
-end
-
-# Draw lines given an observable equilateral triangle
-function draw_lines(triangle::Observable{EquilateralTriangle}, colors::EquilateralTriangleColors)
-    lw = 0.25
-    lines!(@lift(Circle(Point2f(($triangle).A[1],($triangle).A[2]), ($triangle).r)), color=colors.CircleA, linewidth=lw, transparency=true)
-    lines!(@lift(Circle(Point2f(($triangle).B[1],($triangle).B[2]), ($triangle).r)), color=colors.CircleB, linewidth=lw, transparency=true)
-    lines!(@lift([Point($triangle), ($triangle).A]), color=colors.AC, linewidth=lw, transparency=true)
-    lines!(@lift([Point($triangle), ($triangle).B]), color=colors.BC, linewidth=lw, transparency=true)
-    poly!(@lift([($triangle).A, Point($triangle), ($triangle).B]), color=colors.FillPoly, transparency=true)
-end
-
-# Update equilateral triangle colors according to a time schedule
-function update_colors(colors::EquilateralTriangleColors, hide_until, max_at, t; fade_start=0, fade_end=0, stay_poly=true)
-    if t < hide_until
-        # Hide it all!
-        colors.CircleA[] = RGBA(colors.CircleA[].r, colors.CircleA[].g, colors.CircleA[].b, 0.0)
-        colors.CircleB[] = RGBA(colors.CircleB[].r, colors.CircleB[].g, colors.CircleB[].b, 0.0)
-        colors.AC[] = RGBA(colors.AC[].r, colors.AC[].g, colors.AC[].b, 0.0)
-        colors.BC[] = RGBA(colors.BC[].r, colors.BC[].g, colors.BC[].b, 0.0)
-        colors.FillPoly[] = RGBA(colors.FillPoly[].r, colors.FillPoly[].g, colors.FillPoly[].b, 0.0)
-    elseif t <= max_at
-        # Fade in the lines and into the full poly
-        dt = max_at - hide_until
-        curr_dt = (t - hide_until)/dt
-        colors.CircleA[] = RGBA(colors.CircleA[].r, colors.CircleA[].g, colors.CircleA[].b, 1/(1+ℯ^-100(curr_dt-0.125)))
-        colors.CircleB[] = RGBA(colors.CircleB[].r, colors.CircleB[].g, colors.CircleB[].b, 1/(1+ℯ^-100(curr_dt-0.375)))
-        colors.AC[] = RGBA(colors.AC[].r, colors.AC[].g, colors.AC[].b, 1/(1+ℯ^-100(curr_dt-0.625)))
-        colors.BC[] = RGBA(colors.BC[].r, colors.BC[].g, colors.BC[].b, 1/(1+ℯ^-100(curr_dt-0.625)))
-        colors.FillPoly[] = RGBA(colors.FillPoly[].r, colors.FillPoly[].g, colors.FillPoly[].b, 1/(1+ℯ^-100(curr_dt-0.875)))
-    end
+ """Animate the drawing of an equilateral triangle by Euclid"""
+function animate_equilateral(tri::EuclidEquilTri, hide_until, max_at, t;
+                                fade_start=0f0, fade_end=0f0)
+    animate_equilateral_(tri, Float32(hide_until), Float32(max_at), Float32(t),
+                            fade_start=Float32(fade_start), fade_end=Float32(fade_end))
 end
 
 
 
-
-# Representation of a line and another line that is equal to it, drawn from another point
-struct EqualLines
-    A::Point2
-    B::Point2
-    C::Point2
-    triangle::EquilateralTriangle
-    r_CGH::Float32
-    r_GKL::Float32
-    E::Point2
-    F::Point2
-    L::Point2
+""" Represent drawing one line equal to another, existing line, by Euclid """
+struct EuclidEqualLine
+    A::Point2f0
+    B::Point2f0
+    C::Point2f0
+    D::EuclidEquilTri
+    CGH::EuclidCircle
+    GKL::EuclidCircle
+    AB::EuclidLine
+    DE::EuclidLine
+    DF::EuclidLine
+    L::Point2f0
 end
 
-# Get a point that completes a EqualLines representation
-function Point(lines::EqualLines)
-    return lines.L
+""" Get a point that completes a EuclidEqualLine representation"""
+function Point(line::EuclidEqualLine)
+    line.L
 end
 
-# Figure out how to draw an equal line from another point and return a representation
-function EqualLines_from(A::Point2, B::Point2, C::Point2)
-    # Get the equilateral triangle
-    triangle = EquilateralTriangle_from(A,B)
-    D = Point(triangle)
+""" Setup drawing for an equal line by Euclid"""
+function equivalent_line(A::Point2f0, B::Point2f0, C::Point2f0;
+                        cursorcolor=:red, color=:black, linewidth::Float32=1f0)
+    # Get the point D forming an equilateral triangle
+    D = equilateral_triangle(A, B, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    Dpoint = Point(D)
 
     # Get straight lines AE, BF, straight from DA, DB
-    r_CGH = norm(B-C)
-    E = continue_line(D, A, r_CGH + 2)
-    F = continue_line(D, B, r_CGH + 2)
+    CB = B-C
+    r_CGH = norm(CB)
+    E = continue_line(Dpoint, A, r_CGH*2)
+    F = continue_line(Dpoint, B, r_CGH*2)
 
     # Circle CGH with center B, radius BC
-    G = continue_line(D, B, r_CGH)
+    G = continue_line(Dpoint, B, r_CGH)
 
     # Circle GKL with center D, radius DG
-    r_GKL = norm(D-G)
-    L = continue_line(D, A, r_GKL - norm(D-A))
+    GD = Dpoint-G
+    r_GKL = norm(GD)
+    L = continue_line(Dpoint, A, r_GKL - norm(Dpoint-A))
 
-    EqualLines(A, B, C, triangle, r_CGH, r_GKL, E, F, L)
+    AB = straight_line(A, B, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    CGH = whole_circle(B, r_CGH, sign(CB[2])*acos(CB[1]/r_CGH), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    GKL = whole_circle(Dpoint, r_GKL, sign(GD[2])*acos(GD[1]/r_GKL), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    DE = straight_line(Dpoint, E, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    DF = straight_line(Dpoint, F, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+
+    EuclidEqualLine(A, B, C, D, CGH, GKL, AB, DE, DF, L)
+end
+
+""" Draw everything out, fully, for an equal line, by Euclid"""
+function fill_equivalent(line::EuclidEqualLine)
+    fill_line(line.AB)
+    fill_equilateral(line.D)
+    fill_line(line.DE)
+    fill_line(line.DF)
+    fill_circle(line.CGH)
+    fill_circle(line.GKL)
+end
+
+""" Inside animation method for animate drawing equal line by Euclid"""
+function animate_equivalent_(line::EuclidEqualLine, hide_until::Float32, max_at::Float32, t::Float32;
+                                fade_start::Float32=0f0, fade_end::Float32=0f0)
+    d(n, ofn=6) = hide_until + (n-1)*(max_at - hide_until)/ofn
+    animate_line(line.AB, d(1), d(2), t, fade_start=fade_start, fade_end=fade_end)
+    animate_equilateral(line.D, d(2), d(3), t, fade_start=d(4), fade_end=max_at)
+    animate_line(line.DE, d(3), d(4), t, fade_start=fade_start, fade_end=fade_end)
+    animate_line(line.DF, d(4), d(5), t, fade_start=fade_start, fade_end=fade_end)
+    animate_circle(line.CGH, d(5), d(6), t, fade_start=fade_start, fade_end=fade_end)
+    animate_circle(line.GKL, d(6), max_at, t, fade_start=fade_start, fade_end=fade_end)
+end
+
+""" Animate drawing an equivalent line by Euclid"""
+function animate_equivalent(line::EuclidEqualLine, hide_until, max_at, t;
+                                fade_start=0f0, fade_end=0f0)
+    animate_equivalent_(line, Float32(hide_until), Float32(max_at), Float32(t),
+                                fade_start=Float32(fade_start), fade_end=Float32(fade_end))
 end
 
 
-# Draw the lines for an EqualLines previously defined
-function draw_lines(lines::EqualLines; color=:pink)
-    draw_lines(lines.triangle, color=color)
-    D = Point(lines.triangle)
-
-    lines!([lines.A,lines.E], color=color)
-    lines!([lines.B,lines.F], color=color)
-    lines!(Circle(lines.B, lines.r_CGH), color=color)
-    lines!(Circle(D, lines.r_GKL), color=color)
-    lines!([lines.A,D], color=color)
+""" Represent Euclid's method for cutting a line into a segment equal to another, shorter line"""
+struct EuclidCutLine
+    A::Point2f0
+    B::Point2f0
+    C1::Point2f0
+    C2::Point2f0
+    EqualLine::EuclidEqualLine
+    DEF::EuclidCircle
+    AD::EuclidLine
+    E::Point2f0
 end
 
-# Draw the lines given an observable EqualLines
-function draw_lines(lines::Observable{EqualLines}; color=:pink)
-    draw_lines(@lift(($lines).triangle), color=color)
-    D = @lift(Point(($lines).triangle))
+""" Get a point that completes a EuclidCutLine representation"""
+function Point(line::EuclidCutLine)
+    line.E
+end
 
+""" Setup drawing for cutting one line equal to another shorter one"""
+function draw_cut_line(A::Point2f0, B::Point2f0, C1::Point2f0, C2::Point2f0;
+                        cursorcolor=:red, color=:black, linewidth::Float32=1f0)
+    # Draw an equivalent line, then draw a circle based on that equivalent line, cutting AB by the radius
+    EqualLine = equivalent_line(A, C1, C2, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    D = Point(EqualLine)
 
-    lines!(@lift([Point2f(($lines).A[1],($lines).A[2]),($lines).E]), color=color)
-    lines!(@lift([Point2f(($lines).B[1],($lines).B[2]),($lines).F]), color=color)
-    lines!(@lift(Circle(Point2f(($lines).B[1],($lines).B[2]), ($lines).r_CGH)), color=color)
-    lines!(@lift(Circle($D, ($lines).r_GKL)), color=color)
-    lines!(@lift([Point2f(($lines).A[1],($lines).A[2]),$D]), color=color)
+    AD = D-A
+    r_DEF = norm(AD)
+    AB = B - A
+    u = AB / norm(AB)
+    E = A + r_DEF*u
+
+    DEF = whole_circle(A, r_DEF, -acos(AD[1]/r_DEF), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    AD = straight_line(A, D, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+
+    EuclidCutLine(A, B, C1, C2, EqualLine, DEF, AD, E)
 end
 
 
-
-
-
-# Representation of a cut line equal to another line
-struct CutLine
-    A::Point2
-    B::Point2
-    C1::Point2
-    C2::Point2
-    D::EqualLines
-    r::Float32
-    v::Point2
-    u::Point2
-    E::Point2
+""" Inside animation to animate drawing cutting one line equal to another shorter"""
+function animate_cut_line_(line::EuclidCutLine, hide_until::Float32, max_at::Float32, t::Float32;
+                                fade_start::Float32=0f0, fade_end::Float32=0f0)
+    d(n, ofn=3) = hide_until + (n-1)*(max_at - hide_until)/ofn
+    animate_equivalent(line.EqualLine, d(1), d(2), t, fade_start=d(2.5), fade_end=max_at)
+    animate_line(line.AD, d(2), d(3), t, fade_start=fade_start, fade_end=fade_end)
+    animate_circle(line.DEF, d(3), max_at, t, fade_start=fade_start, fade_end=fade_end)
 end
 
-# Get a point that completes a CutLine representation
-function Point(cut::CutLine)
-    return cut.E
-end
-
-# I.3 Find the point that would cut a line equal 
-function CutLine_from(A::Point2, B::Point2, C1::Point2, C2::Point2)
-    D = EqualLines_from(A, C1, C2)
-
-    r = norm(A-Point(D))
-    v = B - A
-    u = v / norm(v)
-    E = A + r*u
-
-    CutLine(A, B, C1, C2, D, r, v, u, E)
-end
-
-# Draw the background lines for cutting a line equal to another
-function draw_lines(cut::CutLine; color=:pink)
-    # Draw all those lines.... meeeep
-    draw_lines(cut.D, color=color)
-
-    lines!([cut.A,cut.B], color=color)
-    lines!([cut.C1,cut.C2], color=color)
-    lines!([cut.A,cut.E], color=color)
-    lines!([cut.A,Point(cut.D)], color=color)
-    lines!(Circle(cut.A, cut.r),color=color)
-    lines!([cut.A,cut.E], color=color)
-end
-
-# Draw the background lines according to observable CutLine data
-function draw_lines(cut::Observable{CutLine}; color=:pink)
-    # Draw all those lines.... meeeep
-    draw_lines(@lift(($cut).D), color=color)
-
-    lines!(@lift([($cut).A,($cut).B]), color=color)
-    lines!(@lift([($cut).C1,($cut).C2]), color=color)
-    lines!(@lift([($cut).A,($cut).E]), color=color)
-    lines!(@lift([($cut).A,Point(($cut).D)]), color=color)
-    lines!(@lift(Circle(($cut).A, ($cut).r)),color=color)
-    lines!(@lift([($cut).A,($cut).E]), color=color)
+""" Animate everything to show a line being cut equal to another, shorter one"""
+function animate_cut_line(line::EuclidCutLine, hide_until, max_at, t;
+                                fade_start=0f0, fade_end=0f0)
+    animate_cut_line_(line, Float32(hide_until), Float32(max_at), Float32(t),
+                                fade_start=Float32(fade_start), fade_end=Float32(fade_end))
 end

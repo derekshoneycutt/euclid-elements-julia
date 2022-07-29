@@ -4,7 +4,7 @@ using Latexify;
 using Colors;
 using GLMakie;
 
-# Describe drawing a line for Euclid functions
+""" Describe drawing a line for Euclid functions"""
 struct EuclidLine
     A::Point2f
     B::Point2f
@@ -15,10 +15,10 @@ struct EuclidLine
     lw_t::Observable{Float32}
 end
 
-# Create the basis for a straight line in Euclid drawings -- Polar coordinates
+""" Create the basis for a straight line in Euclid drawings -- Polar coordinates"""
 function straight_line(A::Point2f, r::Float32, θ::Float32;
                         cursorcolor=:red, color=:black, linewidth::Float32=0f0)
-    B = Point2f(r*cos(θ), r*sin(θ))+A
+    B = Point2f0(r*cos(θ), r*sin(θ))+A
     line = EuclidLine(A, B, r, linewidth, Observable(A), Observable(0f0), Observable(linewidth))
 
     lines!(@lift([A, $(line.B_t)]), color=color, linewidth=(line.lw_t))
@@ -27,7 +27,7 @@ function straight_line(A::Point2f, r::Float32, θ::Float32;
     line
 end
 
-# Create the basis for a straight line in Euclid drawings -- cartesian coordinates
+""" Create the basis for a straight line in Euclid drawings -- cartesian coordinates"""
 function straight_line(A::Point2f, B::Point2f;
                         cursorcolor=:red, color=:black, linewidth::Float32=0f0)
     r = norm(B-A)
@@ -39,7 +39,7 @@ function straight_line(A::Point2f, B::Point2f;
     line
 end
 
-# Show a total, filled line
+""" Show a total, filled line"""
 function fill_line(line::EuclidLine)
     new_B = get_line(line.A, line.B, -1)
     Pr = 0f0
@@ -49,7 +49,7 @@ function fill_line(line::EuclidLine)
     line.lw_t[] = lw
 end
 
-# animate a line (this is an internal function specific)
+""" animate a line (this is an internal function specific)"""
 function animate_line_(line::EuclidLine, hide_until::Float32, max_at::Float32, t::Float32;
                         fade_start::Float32=0f0, fade_end::Float32=0f0)
     if t > hide_until
@@ -76,7 +76,7 @@ function animate_line_(line::EuclidLine, hide_until::Float32, max_at::Float32, t
     end
 end
 
-# animate a line for Euclid
+""" animate a line for Euclid"""
 function animate_line(line::EuclidLine, hide_until, max_at, t;
                         fade_start=0f0, fade_end=0f0)
     # we need to make sure stuff is in Float32 or hell ensues...
@@ -84,7 +84,7 @@ function animate_line(line::EuclidLine, hide_until, max_at, t;
 end
 
 
-# Description for drawing a circle in Euclid
+""" Description for drawing a circle in Euclid"""
 struct EuclidCircle
     A::Point2f
     r::Float32
@@ -96,7 +96,7 @@ struct EuclidCircle
     lw_t::Observable{Float32}
 end
 
-# Setup drawing for a whole circle (potentially to be animated)
+""" Setup drawing for a whole circle (potentially to be animated)"""
 function whole_circle(A::Point2f, r::Float32, startθ::Float32;
                         cursorcolor=:red, color=:black, linewidth::Float32=1f0)
     split_θ = fix_angle(startθ)
@@ -105,7 +105,7 @@ function whole_circle(A::Point2f, r::Float32, startθ::Float32;
                         Observable(false), Observable(split_θ),
                         Observable(0f0), Observable(0f0))
 
-    P = @lift(Point2f(r*cos($(circle.θ)) + A[1], r*sin($(circle.θ)) + A[2]))
+    P = @lift(Point2f0(r*cos($(circle.θ)) + A[1], r*sin($(circle.θ)) + A[2]))
 
     get_angles(currθ, forcedraw) = begin
         angles = []
@@ -130,7 +130,7 @@ function whole_circle(A::Point2f, r::Float32, startθ::Float32;
     circle
 end
 
-# Draw a completed circle for Euclid
+""" Draw a completed circle for Euclid"""
 function fill_circle(circle::EuclidCircle)
     circle.drawwhole[] = true
     circle.Pr_t[] = 0f0
@@ -138,7 +138,7 @@ function fill_circle(circle::EuclidCircle)
 end
 
 
-# Internal function to actually animate the drawing of a circle
+""" Internal function to actually animate the drawing of a circle"""
 function animate_circle_(circle::EuclidCircle, hide_until::Float32, max_at::Float32, t::Float32;
                         fade_start::Float32=0f0, fade_end::Float32=0f0)
     if t > hide_until
@@ -147,7 +147,7 @@ function animate_circle_(circle::EuclidCircle, hide_until::Float32, max_at::Floa
         Pr = 0f0
         lw = 0f0
         if t < max_at
-            θ = fix_angle(circle.startθ + 2π*((t-hide_until)/(max_at-hide_until)))
+            θ = fix_angle((circle.startθ + 2π*((t-hide_until)/(max_at-hide_until))) % 2π)
             Pr = 5f0
             lw = circle.linewidth
         elseif fade_start >= max_at && t > fade_start && t < fade_end
@@ -167,7 +167,7 @@ function animate_circle_(circle::EuclidCircle, hide_until::Float32, max_at::Floa
     end
 end
 
-# Animate the drawing of a circle
+""" Animate the drawing of a circle"""
 function animate_circle(circle::EuclidCircle, hide_until, max_at, t;
                             fade_start=0f0, fade_end=0f0)
     # another pain in the ass convert to Float32 bs
