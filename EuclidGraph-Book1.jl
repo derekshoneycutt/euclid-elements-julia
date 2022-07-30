@@ -21,12 +21,14 @@ end
 """ Construct an equilateral triangle on top of a given line, via Euclid """
 function equilateral_triangle(A::Point2f0, B::Point2f0;
                                 cursorcolor=:red, color=:black, linewidth::Float32=1f0)
-    # Get the radius
-    r = norm(B-A)
+    # Get the radius and vectors
+    BA = A-B
+    AB = B-A
+    r = norm(AB)
 
     # Draw the circles and then the lines that Euclid describes
-    BCD = whole_circle(A, r, -acos((B[1]-A[1])/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
-    ACE = whole_circle(B, r, acos((A[1]-B[1])/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    BCD = whole_circle(A, r, sign(AB[2])*acos(AB[1]/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    ACE = whole_circle(B, r, sign(BA[2])*acos(BA[1]/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
     C = equilateral_from(A, B)
     AC = straight_line(A, C, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
     BC = straight_line(B, C, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
