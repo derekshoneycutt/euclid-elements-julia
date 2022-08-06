@@ -41,7 +41,7 @@ end
 
 """ Show a total, filled line"""
 function fill_line(line::EuclidLine)
-    new_B = get_line(line.A, line.B, -1)
+    new_B = get_line(line.A, line.B, move_out=-1)
     Pr = 0f0
     lw = line.linewidth
     line.B_t[] = new_B
@@ -57,17 +57,17 @@ function animate_line_(line::EuclidLine, hide_until::Float32, max_at::Float32, t
         Pr = 0f0
         lw = 0f0
         if t < max_at
-            new_B = get_line(line.A, line.B, ((t-hide_until)/(max_at-hide_until))*line.r)
+            new_B = get_line(line.A, line.B, move_out=((t-hide_until)/(max_at-hide_until))*line.r)
             Pr = 0.1f0
             lw = line.linewidth
         elseif fade_start >= max_at && t > fade_start && t < fade_end
-            new_B = get_line(line.A, line.B, -1)
+            new_B = get_line(line.A, line.B, move_out=-1)
             lw = line.linewidth - line.linewidth*((t - fade_start)/(fade_end - fade_start))
         elseif fade_start >= max_at && t > fade_start && t >= fade_end
             lw = 0f0
             new_B = line.A
         elseif t >= max_at
-            new_B = get_line(line.A, line.B, -1)
+            new_B = get_line(line.A, line.B, move_out=-1)
             lw = line.linewidth
         end
         line.B_t[] = new_B

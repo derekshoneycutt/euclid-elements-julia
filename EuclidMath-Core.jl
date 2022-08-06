@@ -11,7 +11,7 @@ fix_angle(∠) = begin
 end
 
 """ Find a point that draw along a line indicated by vector B-A"""
-function get_line(A::Point2, B::Point2, move_out=5)
+function get_line(A::Point2, B::Point2; move_out=0)
     v = B - A
     norm_v = norm(v)
     u = v / norm_v
