@@ -140,7 +140,7 @@ end
 
 """ Internal function to actually animate the drawing of a circle"""
 function animate_circle_(circle::EuclidCircle, hide_until::Float32, max_at::Float32, t::Float32;
-                        fade_start::Float32=0f0, fade_end::Float32=0f0)
+                            fade_start::Float32=0f0, fade_end::Float32=0f0)
     if t > hide_until
         drawwhole = false
         θ = circle.startθ
@@ -172,4 +172,152 @@ function animate_circle(circle::EuclidCircle, hide_until, max_at, t;
                             fade_start=0f0, fade_end=0f0)
     # another pain in the ass convert to Float32 bs
     animate_circle_(circle, Float32(hide_until), Float32(max_at), Float32(t), fade_start=Float32(fade_start), fade_end=Float32(fade_end))
+end
+
+
+""" Representation of an animation for comparing 2 triangles """
+struct EuclidTriCompare
+    moveBAC::Observable{Float32}
+    moveEDF::Observable{Float32}
+    Pr_t::Observable{Float32}
+    lw_t::Observable{Float32}
+    linewidth::Float32
+    cursorlinewidth::Float32
+    equals::Bool
+    color::Observable
+    success
+    fail
+    drawing
+end
+
+""" Setup drawing for a whole circle (potentially to be animated)"""
+function compare_triangle(B::Point2f, A::Point2f, C::Point2f, 
+                        E::Point2f, D::Point2f, F::Point2f,
+                        endpoint::Point2f, endθ::Float32;
+                        triangle=true, testlength=true, successcolor=:green, failcolor=:red,
+                        cursorcolor=:purple, color=:black, linewidth::Float32=1f0, cursorlinewidth::Float32=0f0)
+    #Setup the vectors and their equality...
+    vecs = [B-A, C-A, E-D, F-D]
+    norms = norm.(vecs)
+    θs = [acos((vecs[1]⋅vecs[2]) / (norms[1]*norms[2])),acos((vecs[3]⋅vecs[4]) / (norms[3]*norms[4]))]
+    
+    norms_r = round.(norms, digits=10)
+    θs_r = round.(θs, digits=10)
+    ∠equal = θs_r[1]==θs_r[2] && (!testlength || (norms_r[1]==norms_r[3] && norms_r[2]==norms_r[4]))
+
+    # Create the comparison object...
+    compare = EuclidTriCompare(Observable(0f0), Observable(0f0), 
+                                Observable(0f0), Observable(0f0),
+                                linewidth, cursorlinewidth,
+                                ∠equal,
+                                Observable(color), successcolor, failcolor, color)
+
+    # Calculate for angle BAC
+    A_end = endpoint-A
+    Anorm_end = norm(A_end)
+    Au_end = A_end/Anorm_end
+    θBAC_start = sign(vecs[1][2])*acos(vecs[1][1] / norms[1])
+
+    θBAC_t = @lift(((endθ - θBAC_start) * $(compare.moveBAC)) + θBAC_start)
+    A_t = @lift(Au_end .* (Anorm_end * $(compare.moveBAC)) + A)
+    B_t = @lift(norms[1] * [cos($θBAC_t), sin($θBAC_t)] + $A_t)
+    C_t = @lift(norms[2] * [cos($θBAC_t + θs[1]), sin($θBAC_t + θs[1])] + $A_t)
+
+    # Calculate for angle EDF
+    D_end = endpoint-D
+    Dnorm_end = norm(D_end)
+    Du_end = D_end/Dnorm_end
+    θEDF_start = sign(vecs[3][2])*acos(vecs[3][1] / norms[3])
+
+    θEDF_t = @lift(((endθ - θEDF_start) * $(compare.moveEDF)) + θEDF_start)
+    D_t = @lift(Du_end .* (Dnorm_end * $(compare.moveEDF)) + D)
+    E_t = @lift(norms[3] * [cos($θEDF_t), sin($θEDF_t)] + $D_t)
+    F_t = @lift(norms[4] * [cos($θEDF_t + θs[2]), sin($θEDF_t + θs[2])] + $D_t)
+
+    # Finally, draw the lines, starting with the cursor wires
+    if cursorlinewidth > 0
+        lines!(@lift([B, $B_t]), color=cursorcolor, linewidth=(compare.Pr_t))
+        lines!(@lift([A, $A_t]), color=cursorcolor, linewidth=(compare.Pr_t))
+        lines!(@lift([C, $C_t]), color=cursorcolor, linewidth=(compare.Pr_t))
+    end
+
+    if cursorlinewidth > 0
+        lines!(@lift([E, $E_t]), color=cursorcolor, linewidth=(compare.Pr_t))
+        lines!(@lift([D, $D_t]), color=cursorcolor, linewidth=(compare.Pr_t))
+        lines!(@lift([F, $F_t]), color=cursorcolor, linewidth=(compare.Pr_t))
+    end
+
+    # Then draw the comparison angle BAC
+    BACline = triangle ? 
+                @lift([Point2f($B_t), Point2f($A_t), Point2f($C_t), Point2f($B_t), Point2f($A_t)]) :
+                @lift([Point2f($B_t), Point2f($A_t), Point2f($C_t)])
+    lines!(BACline, color=(compare.color), linewidth=(compare.lw_t))
+
+    # Then draw the comparison angle EDF
+    EDFline = triangle ? 
+                @lift([Point2f($E_t), Point2f($D_t), Point2f($F_t), Point2f($E_t), Point2f($D_t)]) :
+                @lift([Point2f($E_t), Point2f($D_t), Point2f($F_t)])
+    lines!(EDFline, color=(compare.color), linewidth=(compare.lw_t))
+
+    # Return the comparison object
+    compare
+end
+
+""" Draw a completed triangle comparison for Euclid"""
+function fill_tricompare(tri::EuclidTriCompare)
+    tri.moveBAC[] = 1f0
+    tri.moveEDF[] = 1f0
+    tri.Pr_t[] = 0f0
+    tri.lw_t[] = tri.linewidth
+    tri.color[] = tri.equals == true ? tri.success : tri.fail
+end
+
+
+""" Internal function to actually animate the drawing of a (tri)angle comparison"""
+function animate_tricompare_(tri::EuclidTriCompare, hide_until::Float32, max_at::Float32, t::Float32;
+                                fade_start::Float32=0f0, fade_end::Float32=0f0)
+    if t > hide_until
+        moveBAC = 0f0
+        moveEDF = 0f0
+        Pr = 0f0
+        lw = 0f0
+        color = tri.drawing
+        if t < max_at
+            percmove = (t-hide_until)/(max_at-hide_until)
+            moveBAC = percmove < 0.5f0 ? percmove *  2f0 : 1f0
+            moveEDF = percmove > 0.5f0 ? (percmove - 0.5f0) * 2 : 0f0
+            Pr = tri.cursorlinewidth
+            lw = tri.linewidth
+        elseif fade_start >= max_at && t > fade_start && t < fade_end
+            lw = tri.linewidth - tri.linewidth*((t - fade_start)/(fade_end - fade_start))
+            Pr = tri.cursorlinewidth - tri.cursorlinewidth*((t - fade_start)/(fade_end - fade_start))
+            moveBAC = 1
+            moveEDF = 1
+            color = tri.equals == true ? tri.success : tri.fail
+        elseif fade_start >= max_at && t > fade_start && t >= fade_end
+            lw = 0f0
+            Pr = 0f0
+            moveBAC = 1
+            moveEDF = 1
+            color = tri.equals == true ? tri.success : tri.fail
+        elseif t >= max_at
+            lw = tri.linewidth
+            Pr = tri.cursorlinewidth
+            moveBAC = 1
+            moveEDF = 1
+            color = tri.equals == true ? tri.success : tri.fail
+        end
+        tri.moveBAC[] = moveBAC
+        tri.moveEDF[] = moveEDF
+        tri.Pr_t[] = Pr
+        tri.lw_t[] = lw
+        tri.color[] = color
+    end
+end
+
+
+""" Animate the drawing of a (tri)angle comparison"""
+function animate_tricompare(tri::EuclidTriCompare, hide_until, max_at, t;
+                                fade_start=0f0, fade_end=0f0)
+    animate_tricompare_(tri, Float32(hide_until), Float32(max_at), Float32(t), fade_start=Float32(fade_start), fade_end=Float32(fade_end))
 end
