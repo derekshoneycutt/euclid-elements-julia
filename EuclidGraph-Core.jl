@@ -195,15 +195,26 @@ function compare_triangle(B::Point2f, A::Point2f, C::Point2f,
                         E::Point2f, D::Point2f, F::Point2f,
                         endpoint::Point2f, endθ::Float32;
                         triangle=true, testlength=true, successcolor=:green, failcolor=:red,
+                        precision=10,
                         cursorcolor=:purple, color=:black, linewidth::Float32=1f0, cursorlinewidth::Float32=0f0)
     #Setup the vectors and their equality...
     vecs = [B-A, C-A, E-D, F-D]
     norms = norm.(vecs)
-    θs = [acos((vecs[1]⋅vecs[2]) / (norms[1]*norms[2])),acos((vecs[3]⋅vecs[4]) / (norms[3]*norms[4]))]
+    θorigins = [sign(vecs[1][2])*acos(vecs[1][1] / norms[1]),
+                sign(vecs[2][2])*acos(vecs[2][1] / norms[2]),
+                sign(vecs[3][2])*acos(vecs[3][1] / norms[3]),
+                sign(vecs[4][2])*acos(vecs[4][1] / norms[4])]
+    for (i,θ) in enumerate(θorigins)
+        if θ == 0f0 && vecs[i][1] < 0
+            θorigins[i] = π
+        end
+    end
+    θs = [sign(θorigins[2] - θorigins[1])*acos((vecs[1]⋅vecs[2]) / (norms[1]*norms[2])),
+            sign(θorigins[4] - θorigins[3])*acos((vecs[3]⋅vecs[4]) / (norms[3]*norms[4]))]
     
-    norms_r = round.(norms, digits=10)
-    θs_r = round.(θs, digits=10)
-    ∠equal = θs_r[1]==θs_r[2] && (!testlength || (norms_r[1]==norms_r[3] && norms_r[2]==norms_r[4]))
+    norms_r = round.(norms, digits=precision)
+    θs_r = round.(θs, digits=precision)
+    ∠equal = abs(θs_r[1])==abs(θs_r[2]) && (!testlength || (norms_r[1]==norms_r[3] && norms_r[2]==norms_r[4]))
 
     # Create the comparison object...
     compare = EuclidTriCompare(Observable(0f0), Observable(0f0), 
@@ -216,23 +227,23 @@ function compare_triangle(B::Point2f, A::Point2f, C::Point2f,
     A_end = endpoint-A
     Anorm_end = norm(A_end)
     Au_end = A_end/Anorm_end
-    θBAC_start = sign(vecs[1][2])*acos(vecs[1][1] / norms[1])
 
-    θBAC_t = @lift(((endθ - θBAC_start) * $(compare.moveBAC)) + θBAC_start)
+    θBAC_t = @lift(((endθ - θorigins[1]) * $(compare.moveBAC)) + θorigins[1])
     A_t = @lift(Au_end .* (Anorm_end * $(compare.moveBAC)) + A)
     B_t = @lift(norms[1] * [cos($θBAC_t), sin($θBAC_t)] + $A_t)
-    C_t = @lift(norms[2] * [cos($θBAC_t + θs[1]), sin($θBAC_t + θs[1])] + $A_t)
+    Cθ = @lift($θBAC_t + (θs[1] >= 0 ? θs[1] : θs[1] - ($(compare.moveBAC) * 2 * θs[1])))
+    C_t = @lift(norms[2] * [cos($Cθ), sin($Cθ)] + $A_t)
 
     # Calculate for angle EDF
     D_end = endpoint-D
     Dnorm_end = norm(D_end)
     Du_end = D_end/Dnorm_end
-    θEDF_start = sign(vecs[3][2])*acos(vecs[3][1] / norms[3])
 
-    θEDF_t = @lift(((endθ - θEDF_start) * $(compare.moveEDF)) + θEDF_start)
+    θEDF_t = @lift(((endθ - θorigins[3]) * $(compare.moveEDF)) + θorigins[3])
     D_t = @lift(Du_end .* (Dnorm_end * $(compare.moveEDF)) + D)
     E_t = @lift(norms[3] * [cos($θEDF_t), sin($θEDF_t)] + $D_t)
-    F_t = @lift(norms[4] * [cos($θEDF_t + θs[2]), sin($θEDF_t + θs[2])] + $D_t)
+    Fθ = @lift($θEDF_t + (θs[2] >= 0 ? θs[2] : θs[2] - ($(compare.moveEDF) * 2 * θs[2])))
+    F_t = @lift(norms[4] * [cos($Fθ), sin($Fθ)] + $D_t)
 
     # Finally, draw the lines, starting with the cursor wires
     if cursorlinewidth > 0
