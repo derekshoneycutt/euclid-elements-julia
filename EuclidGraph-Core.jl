@@ -10,6 +10,7 @@ struct EuclidLine
     B::Point2f
     r::Float32
     linewidth::Float32
+    cursorwidth::Float32
     B_t::Observable{Point2f}
     Pr_t::Observable{Float32}
     lw_t::Observable{Float32}
@@ -17,9 +18,9 @@ end
 
 """ Create the basis for a straight line in Euclid drawings -- Polar coordinates"""
 function straight_line(A::Point2f, r::Float32, θ::Float32;
-                        cursorcolor=:red, color=:black, linewidth::Float32=0f0)
+                        cursorcolor=:red, color=:black, linewidth::Float32=0f0, cursorwidth::Float32=0.1f0)
     B = Point2f0(r*cos(θ), r*sin(θ))+A
-    line = EuclidLine(A, B, r, linewidth, Observable(A), Observable(0f0), Observable(linewidth))
+    line = EuclidLine(A, B, r, linewidth, cursorwidth, Observable(A), Observable(0f0), Observable(linewidth))
 
     lines!(@lift([A, $(line.B_t)]), color=color, linewidth=(line.lw_t))
     poly!(@lift(Circle($(line.B_t), $(line.Pr_t))), color=cursorcolor)
@@ -29,9 +30,9 @@ end
 
 """ Create the basis for a straight line in Euclid drawings -- cartesian coordinates"""
 function straight_line(A::Point2f, B::Point2f;
-                        cursorcolor=:red, color=:black, linewidth::Float32=0f0)
+                        cursorcolor=:red, color=:black, linewidth::Float32=0f0, cursorwidth::Float32=0.1f0)
     r = norm(B-A)
-    line = EuclidLine(A, B, r, linewidth, Observable(A), Observable(0f0), Observable(linewidth))
+    line = EuclidLine(A, B, r, linewidth, cursorwidth, Observable(A), Observable(0f0), Observable(linewidth))
 
     lines!(@lift([A, $(line.B_t)]), color=color, linewidth=(line.lw_t))
     poly!(@lift(Circle($(line.B_t), $(line.Pr_t))), color=cursorcolor)
@@ -58,7 +59,7 @@ function animate_line_(line::EuclidLine, hide_until::Float32, max_at::Float32, t
         lw = 0f0
         if t < max_at
             new_B = get_line(line.A, line.B, move_out=((t-hide_until)/(max_at-hide_until))*line.r)
-            Pr = 0.1f0
+            Pr = line.cursorwidth
             lw = line.linewidth
         elseif fade_start >= max_at && t > fade_start && t < fade_end
             new_B = get_line(line.A, line.B, move_out=-1)
@@ -90,6 +91,7 @@ struct EuclidCircle
     r::Float32
     startθ::Float32
     linewidth::Float32
+    cursorwidth::Float32
     drawwhole::Observable{Bool}
     θ::Observable{Float32}
     Pr_t::Observable{Float32}
@@ -98,10 +100,10 @@ end
 
 """ Setup drawing for a whole circle (potentially to be animated)"""
 function whole_circle(A::Point2f, r::Float32, startθ::Float32;
-                        cursorcolor=:red, color=:black, linewidth::Float32=1f0)
+                        cursorcolor=:red, color=:black, linewidth::Float32=1f0, cursorwidth::Float32=5f0)
     split_θ = fix_angle(startθ)
 
-    circle = EuclidCircle(A, r, split_θ, linewidth,
+    circle = EuclidCircle(A, r, split_θ, linewidth, cursorwidth,
                         Observable(false), Observable(split_θ),
                         Observable(0f0), Observable(0f0))
 
@@ -148,7 +150,7 @@ function animate_circle_(circle::EuclidCircle, hide_until::Float32, max_at::Floa
         lw = 0f0
         if t < max_at
             θ = fix_angle((circle.startθ + 2π*((t-hide_until)/(max_at-hide_until))) % 2π)
-            Pr = 5f0
+            Pr = circle.cursorwidth
             lw = circle.linewidth
         elseif fade_start >= max_at && t > fade_start && t < fade_end
             drawwhole=true
@@ -175,6 +177,141 @@ function animate_circle(circle::EuclidCircle, hide_until, max_at, t;
 end
 
 
+
+""" Representation of an animation for comparing 2 lines """
+struct EuclidLineCompare
+    moveAB::Observable{Float32}
+    moveCD::Observable{Float32}
+    Pr_t::Observable{Float32}
+    lw_t::Observable{Float32}
+    linewidth::Float32
+    cursorlinewidth::Float32
+    equals::Bool
+    color::Observable
+    success
+    fail
+    drawing
+end
+
+
+""" Setup drawing for a line comparison (potentially to be animated)"""
+function compare_lines(A::Point2f, B::Point2f,
+                        C::Point2f, D::Point2f,
+                        endpoint::Point2f, endθ::Float32;
+                        successcolor=:green, failcolor=:red,
+                        precision=10,
+                        cursorcolor=:purple, color=:black, linewidth::Float32=1f0, cursorlinewidth::Float32=0f0)
+    #Setup the vectors and their equality...
+    vecs = [B-A, D-C]
+    norms = norm.(vecs)
+    θs = [sign(vec[2])*acos(vec[1]/norm(vec)) for vec in vecs]
+    
+    norms_r = round.(norms, digits=precision)
+    linesequal = norms_r[1]==norms_r[2]
+
+    # Create the comparison object...
+    compare = EuclidLineCompare(Observable(0f0), Observable(0f0), 
+                                Observable(0f0), Observable(0f0),
+                                linewidth, cursorlinewidth,
+                                linesequal,
+                                Observable(color), successcolor, failcolor, color)
+
+    # Get end unit vectors
+    vecs_end = [endpoint - A, endpoint - C]
+    norms_end = norm.(vecs_end)
+    uvecs_end = vecs_end ./ norms_end
+
+    # Calculate for line AB
+    θAB_t = @lift(((endθ - θs[1]) * $(compare.moveAB)) + θs[1])
+    A_t = @lift(uvecs_end[1] .* (norms_end[1] * $(compare.moveAB)) + A)
+    B_t = @lift(norms[1] * [cos($θAB_t), sin($θAB_t)] + $A_t)
+
+    # Calculate for line CD
+    θCD_t = @lift(((endθ - θs[2]) * $(compare.moveCD)) + θs[2])
+    C_t = @lift(uvecs_end[2] .* (norms_end[2] * $(compare.moveCD)) + C)
+    D_t = @lift(norms[2] * [cos($θCD_t), sin($θCD_t)] + $C_t)
+
+    # Finally, draw the lines, starting with the cursor wires
+    if cursorlinewidth > 0
+        lines!(@lift([A, $A_t]), color=cursorcolor, linewidth=(compare.Pr_t))
+        lines!(@lift([B, $B_t]), color=cursorcolor, linewidth=(compare.Pr_t))
+
+        lines!(@lift([C, $C_t]), color=cursorcolor, linewidth=(compare.Pr_t))
+        lines!(@lift([D, $D_t]), color=cursorcolor, linewidth=(compare.Pr_t))
+    end
+
+    # Then draw the comparison line AB
+    ABline = @lift([Point2f($A_t), Point2f($B_t)])
+    lines!(ABline, color=(compare.color), linewidth=(compare.lw_t))
+
+    # Then draw the comparison angle EDF
+    CDline = @lift([Point2f($C_t), Point2f($D_t)])
+    lines!(CDline, color=(compare.color), linewidth=(compare.lw_t))
+
+    # Return the comparison object
+    compare
+end
+
+""" Draw a completed line comparison for Euclid"""
+function fill_linecompare(line::EuclidLineCompare)
+    line.moveAB[] = 1f0
+    line.moveCD[] = 1f0
+    line.Pr_t[] = 0f0
+    line.lw_t[] = line.linewidth
+    line.color[] = line.equals == true ? line.success : line.fail
+end
+
+""" Internal function to actually animate the drawing of a line comparison"""
+function animate_linecompare_(line::EuclidLineCompare, hide_until::Float32, max_at::Float32, t::Float32;
+                                fade_start::Float32=0f0, fade_end::Float32=0f0)
+    if t > hide_until
+        moveAB = 0f0
+        moveCD = 0f0
+        Pr = 0f0
+        lw = 0f0
+        color = line.drawing
+        if t < max_at
+            percmove = (t-hide_until)/(max_at-hide_until)
+            moveAB = percmove < 0.5f0 ? percmove *  2f0 : 1f0
+            moveCD = percmove > 0.5f0 ? (percmove - 0.5f0) * 2 : 0f0
+            Pr = line.cursorlinewidth
+            lw = line.linewidth
+        elseif fade_start >= max_at && t > fade_start && t < fade_end
+            lw = line.linewidth - line.linewidth*((t - fade_start)/(fade_end - fade_start))
+            Pr = line.cursorlinewidth - line.cursorlinewidth*((t - fade_start)/(fade_end - fade_start))
+            moveAB = 1
+            moveCD = 1
+            color = line.equals == true ? line.success : line.fail
+        elseif fade_start >= max_at && t > fade_start && t >= fade_end
+            lw = 0f0
+            Pr = 0f0
+            moveAB = 1
+            moveCD = 1
+            color = line.equals == true ? line.success : line.fail
+        elseif t >= max_at
+            lw = line.linewidth
+            Pr = line.cursorlinewidth
+            moveAB = 1
+            moveCD = 1
+            color = line.equals == true ? line.success : line.fail
+        end
+        line.moveAB[] = moveAB
+        line.moveCD[] = moveCD
+        line.Pr_t[] = Pr
+        line.lw_t[] = lw
+        line.color[] = color
+    end
+end
+
+""" Animate the drawing of a line comparison """
+function animate_linecompare(line::EuclidLineCompare, hide_until, max_at, t;
+                                fade_start=0f0, fade_end=0f0)
+    animate_linecompare_(line, Float32(hide_until), Float32(max_at), Float32(t), fade_start=Float32(fade_start), fade_end=Float32(fade_end))
+end
+
+
+
+
 """ Representation of an animation for comparing 2 triangles """
 struct EuclidTriCompare
     moveBAC::Observable{Float32}
@@ -190,13 +327,13 @@ struct EuclidTriCompare
     drawing
 end
 
-""" Setup drawing for a whole circle (potentially to be animated)"""
+""" Setup drawing for a (tri)angle comparison (potentially to be animated)"""
 function compare_triangle(B::Point2f, A::Point2f, C::Point2f, 
-                        E::Point2f, D::Point2f, F::Point2f,
-                        endpoint::Point2f, endθ::Float32;
-                        triangle=true, testlength=true, successcolor=:green, failcolor=:red,
-                        precision=10,
-                        cursorcolor=:purple, color=:black, linewidth::Float32=1f0, cursorlinewidth::Float32=0f0)
+                            E::Point2f, D::Point2f, F::Point2f,
+                            endpoint::Point2f, endθ::Float32;
+                            triangle=true, testlength=true, successcolor=:green, failcolor=:red,
+                            precision=10,
+                            cursorcolor=:purple, color=:black, linewidth::Float32=1f0, cursorlinewidth::Float32=0f0)
     #Setup the vectors and their equality...
     vecs = [B-A, C-A, E-D, F-D]
     norms = norm.(vecs)
@@ -250,9 +387,7 @@ function compare_triangle(B::Point2f, A::Point2f, C::Point2f,
         lines!(@lift([B, $B_t]), color=cursorcolor, linewidth=(compare.Pr_t))
         lines!(@lift([A, $A_t]), color=cursorcolor, linewidth=(compare.Pr_t))
         lines!(@lift([C, $C_t]), color=cursorcolor, linewidth=(compare.Pr_t))
-    end
 
-    if cursorlinewidth > 0
         lines!(@lift([E, $E_t]), color=cursorcolor, linewidth=(compare.Pr_t))
         lines!(@lift([D, $D_t]), color=cursorcolor, linewidth=(compare.Pr_t))
         lines!(@lift([F, $F_t]), color=cursorcolor, linewidth=(compare.Pr_t))
@@ -282,7 +417,6 @@ function fill_tricompare(tri::EuclidTriCompare)
     tri.lw_t[] = tri.linewidth
     tri.color[] = tri.equals == true ? tri.success : tri.fail
 end
-
 
 """ Internal function to actually animate the drawing of a (tri)angle comparison"""
 function animate_tricompare_(tri::EuclidTriCompare, hide_until::Float32, max_at::Float32, t::Float32;
@@ -325,7 +459,6 @@ function animate_tricompare_(tri::EuclidTriCompare, hide_until::Float32, max_at:
         tri.color[] = color
     end
 end
-
 
 """ Animate the drawing of a (tri)angle comparison"""
 function animate_tricompare(tri::EuclidTriCompare, hide_until, max_at, t;
