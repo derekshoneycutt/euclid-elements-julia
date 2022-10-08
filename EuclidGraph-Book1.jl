@@ -20,7 +20,7 @@ end
 
 """ Construct an equilateral triangle on top of a given line, via Euclid """
 function equilateral_triangle(A::Point2f0, B::Point2f0;
-                                cursorcolor=:red, color=:black, linewidth::Float32=1f0)
+                                cursorcolor=:red, color=:black, linewidth::Float32=1f0, cursorlw=0.1f0)
     # Get the radius and vectors
     BA = A-B
     AB = B-A
@@ -30,8 +30,8 @@ function equilateral_triangle(A::Point2f0, B::Point2f0;
     BCD = whole_circle(A, r, sign(AB[2])*acos(AB[1]/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
     ACE = whole_circle(B, r, sign(BA[2])*acos(BA[1]/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
     C = equilateral_from(A, B)
-    AC = straight_line(A, C, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
-    BC = straight_line(B, C, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    AC = straight_line(A, C, cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorwidth=cursorlw)
+    BC = straight_line(B, C, cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorwidth=cursorlw)
 
     EuclidEquilTri(A, B, C, BCD, ACE, AC, BC)
 end
