@@ -327,6 +327,22 @@ struct EuclidTriCompare
     drawing
 end
 
+
+""" Calculate an angle for comparison triangles, including 3 points representing angle, in terms of time t """
+function calc_∠_for_comp_triangle(endpoint, endθ, origin, θorigin, t::Observable{Float32}, θ, normB, normC)
+    calc_end = endpoint - origin
+    calcnorm_end = norm(calc_end)
+    calcu_end = calc_end / calcnorm_end
+
+    θ_t = @lift(((endθ - θorigin) * $t) + θorigin)
+    calc_t = @lift(calcu_end .* (calcnorm_end * $t) + origin)
+    B_t = @lift(normB * [cos($θ_t), sin($θ_t)] + $calc_t)
+    Cθ = @lift($θ_t + (θ >= 0 ? θ : θ - ($t * 2 * θ)))
+    C_t = @lift(normC * [cos($Cθ), sin($Cθ)] + $calc_t)
+
+    (calc_t, B_t, C_t)
+end
+
 """ Setup drawing for a (tri)angle comparison (potentially to be animated)"""
 function compare_triangle(B::Point2f, A::Point2f, C::Point2f, 
                             E::Point2f, D::Point2f, F::Point2f,
@@ -337,12 +353,8 @@ function compare_triangle(B::Point2f, A::Point2f, C::Point2f,
     #Setup the vectors and their equality...
     vecs = [B-A, C-A, E-D, F-D]
     norms = norm.(vecs)
-    θorigins = [sign(vec[2])*acos(vec[1] / norms[i]) for (i, vec) in enumerate(vecs)]
-    for (i,θ) in enumerate(θorigins)
-        if θ == 0f0 && vecs[i][1] < 0
-            θorigins[i] = π
-        end
-    end
+    fix_θ_0(vec, θ) = θ == 0f0 && vec[1] < 0 ? π : θ
+    θorigins = [fix_θ_0(vec, sign(vec[2])*acos(vec[1] / norms[i])) for (i, vec) in enumerate(vecs)]
 
     # This is the angles that we are working with (comparing and moving), and need a lil helper functions to find the sign of those angles
     θsign(angle1, angle2) = sign(fix_angle(angle1) - fix_angle(angle2))
@@ -360,27 +372,9 @@ function compare_triangle(B::Point2f, A::Point2f, C::Point2f,
                                 ∠equal,
                                 Observable(color), successcolor, failcolor, color)
 
-    # Calculate for angle BAC
-    A_end = endpoint-A
-    Anorm_end = norm(A_end)
-    Au_end = A_end/Anorm_end
-
-    θBAC_t = @lift(((endθ - θorigins[1]) * $(compare.moveBAC)) + θorigins[1])
-    A_t = @lift(Au_end .* (Anorm_end * $(compare.moveBAC)) + A)
-    B_t = @lift(norms[1] * [cos($θBAC_t), sin($θBAC_t)] + $A_t)
-    Cθ = @lift($θBAC_t + (θs[1] >= 0 ? θs[1] : θs[1] - ($(compare.moveBAC) * 2 * θs[1])))
-    C_t = @lift(norms[2] * [cos($Cθ), sin($Cθ)] + $A_t)
-
-    # Calculate for angle EDF
-    D_end = endpoint-D
-    Dnorm_end = norm(D_end)
-    Du_end = D_end/Dnorm_end
-
-    θEDF_t = @lift(((endθ - θorigins[3]) * $(compare.moveEDF)) + θorigins[3])
-    D_t = @lift(Du_end .* (Dnorm_end * $(compare.moveEDF)) + D)
-    E_t = @lift(norms[3] * [cos($θEDF_t), sin($θEDF_t)] + $D_t)
-    Fθ = @lift($θEDF_t + (θs[2] >= 0 ? θs[2] : θs[2] - ($(compare.moveEDF) * 2 * θs[2])))
-    F_t = @lift(norms[4] * [cos($Fθ), sin($Fθ)] + $D_t)
+    # Calculate the angle in terms of time for animations
+    (A_t, B_t, C_t) = calc_∠_for_comp_triangle(endpoint, endθ, A, θorigins[1], compare.moveBAC, θs[1], norms[1], norms[2])
+    (D_t, E_t, F_t) = calc_∠_for_comp_triangle(endpoint, endθ, D, θorigins[3], compare.moveEDF, θs[2], norms[3], norms[4])
 
     # Finally, draw the lines, starting with the cursor wires
     if cursorlinewidth > 0
