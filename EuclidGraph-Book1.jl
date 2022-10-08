@@ -194,3 +194,72 @@ function animate_cut_line(line::EuclidCutLine, hide_until, max_at, t;
     animate_cut_line_(line, Float32(hide_until), Float32(max_at), Float32(t),
                                 fade_start=Float32(fade_start), fade_end=Float32(fade_end))
 end
+
+
+
+""" Representation of an animation for bisecting an angle """
+struct EuclidBisectAngle
+    AE_circle::EuclidCircle
+    ED::EuclidLine
+    D_lines::EuclidEquilTri
+    F::Point2f0
+    AF::EuclidLine
+end
+
+""" Gets the point that a line can be drawn between the origin of the angle and to get a line bisecting the angle """
+function Point(bisect::EuclidBisectAngle)
+    bisect.F
+end
+
+""" Calculate the bisection of a given angle, with A as the origin and B and C as points along opposite sides """
+function bisect_angle(A::Point2f0, B::Point2f0, C::Point2f0)
+    #Let the angle BAC be the given recilineal angle
+    norm_B = norm(B-A)
+    norm_C = norm(C-A)
+
+    #Thus it is required to bisect it
+    #Let a point D be taken at random on AB
+    #   We will choose the shorter of the length of B or C as vectors from A to decide
+    norm_D = min(norm_B, norm_C)
+    D = B * norm_D / norm_B + A
+
+    #let AE be cut off from AC equal to AD  [I.3]
+    AE_circle = whole_circle(A, norm_D, 0f0, color=:pink, linewidth=5f0)
+    E = C * norm_D / norm_C + A
+
+    #let DE be joined
+    ED = straight_line(E, D, color=:pink, linewidth=5f0, cursorwidth=0.025f0)
+
+    #and on DE let the equilateral triangle DEF be constructed.
+    D_lines = equilateral_triangle(E, D, color=:pink, linewidth=5f0, cursorlw=0.025f0)
+    F = Point(D_lines)
+
+    #and let AF be joined
+    AF = straight_line(A, F, color=:green, linewidth=2f0, cursorwidth=0.025f0)
+
+    EuclidBisectAngle(AE_circle, ED, D_lines, F, AF)
+end
+
+""" Animate a previously calculation of a bisected angle """
+function animate_bisect_angle_(bisect::EuclidBisectAngle, hide_until::Float32, max_at::Float32, t::Float32;
+                                    fade_start::Float32=0f0, fade_end::Float32=0f0)
+    d(n, ofn=4) = hide_until + (n-1)*(max_at - hide_until)/ofn
+    #animate AE
+    animate_circle(bisect.AE_circle, d(1), d(2), t, fade_start=d(2.5), fade_end=d(3))
+
+    #Animate DE
+    animate_line(bisect.ED, d(2), d(3), t, fade_start=d(3.5), fade_end=max_at)
+
+    #Animate DEF
+    animate_equilateral(bisect.D_lines, d(3), d(4), t, fade_start=d(4.01), fade_end=max_at)
+
+    #Animate AF
+    animate_line(bisect.AF, d(4), max_at, t, fade_start=fade_start, fade_end=fade_end)
+end
+
+""" Animate a previously calculation of a bisected angle """
+function animate_bisect_angle(bisect::EuclidBisectAngle, hide_until, max_at, t;
+                                    fade_start=0f0, fade_end=0f0)
+    animate_bisect_angle_(bisect, Float32(hide_until), Float32(max_at), Float32(t),
+                                    fade_start=Float32(fade_start), fade_end=Float32(fade_end))
+end
