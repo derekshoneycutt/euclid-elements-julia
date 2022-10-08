@@ -346,8 +346,12 @@ function compare_triangle(B::Point2f, A::Point2f, C::Point2f,
             θorigins[i] = π
         end
     end
-    θs = [sign(θorigins[2] - θorigins[1])*acos((vecs[1]⋅vecs[2]) / (norms[1]*norms[2])),
-            sign(θorigins[4] - θorigins[3])*acos((vecs[3]⋅vecs[4]) / (norms[3]*norms[4]))]
+
+    # This is the angles that we are working with (comparing and moving), and need a lil helper functions to find the sign of those angles
+    fixed_angle(angle) = angle >= 0 ? angle : 360 + angle
+    θsign(angle1, angle2) = sign(fixed_angle(angle1) - fixed_angle(angle2))
+    θs = [θsign(θorigins[2], θorigins[1])*acos((vecs[1]⋅vecs[2]) / (norms[1]*norms[2])),
+            θsign(θorigins[4], θorigins[3])*acos((vecs[3]⋅vecs[4]) / (norms[3]*norms[4]))]
     
     norms_r = round.(norms, digits=precision)
     θs_r = round.(θs, digits=precision)
