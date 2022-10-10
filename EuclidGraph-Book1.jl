@@ -27,8 +27,9 @@ function equilateral_triangle(A::Point2f0, B::Point2f0;
     r = norm(AB)
 
     # Draw the circles and then the lines that Euclid describes
-    BCD = whole_circle(A, r, sign(AB[2])*acos(AB[1]/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
-    ACE = whole_circle(B, r, sign(BA[2])*acos(BA[1]/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    getsign(x) = x >= 0 ? 1 : -1
+    BCD = whole_circle(A, r, getsign(AB[2])*acos(AB[1]/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    ACE = whole_circle(B, r, getsign(BA[2])*acos(BA[1]/r), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
     C = equilateral_from(A, B)
     AC = straight_line(A, C, cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorwidth=cursorlw)
     BC = straight_line(B, C, cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorwidth=cursorlw)
@@ -103,9 +104,10 @@ function equivalent_line(A::Point2f0, B::Point2f0, C::Point2f0;
     r_GKL = norm(GD)
     L = continue_line(Dpoint, A, r_GKL - norm(Dpoint-A))
 
+    getsign(x) = x >= 0 ? 1 : -1
     AB = straight_line(A, B, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
-    CGH = whole_circle(B, r_CGH, sign(CB[2])*acos(CB[1]/r_CGH), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
-    GKL = whole_circle(Dpoint, r_GKL, sign(GD[2])*acos(GD[1]/r_GKL), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    CGH = whole_circle(B, r_CGH, getsign(CB[2])*acos(CB[1]/r_CGH), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    GKL = whole_circle(Dpoint, r_GKL, getsign(GD[2])*acos(GD[1]/r_GKL), cursorcolor=cursorcolor, color=color, linewidth=linewidth)
     DE = straight_line(Dpoint, E, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
     DF = straight_line(Dpoint, F, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
 
@@ -178,6 +180,13 @@ function draw_cut_line(A::Point2f0, B::Point2f0, C1::Point2f0, C2::Point2f0;
     EuclidCutLine(A, B, C1, C2, EqualLine, DEF, AD, E)
 end
 
+""" Fill out the drawing of a cut line, in all of its parts """
+function fill_cut_line(line::EuclidCutLine)
+    fill_equivalent(line.EqualLine)
+    fill_line(line.AD)
+    fill_circle(line.DEF)
+end
+
 
 """ Inside animation to animate drawing cutting one line equal to another shorter"""
 function animate_cut_line_(line::EuclidCutLine, hide_until::Float32, max_at::Float32, t::Float32;
@@ -203,7 +212,6 @@ struct EuclidBisectAngle
     ED::EuclidLine
     D_lines::EuclidEquilTri
     F::Point2f0
-    AF::EuclidLine
 end
 
 """ Gets the point that a line can be drawn between the origin of the angle and to get a line bisecting the angle """
@@ -212,49 +220,70 @@ function Point(bisect::EuclidBisectAngle)
 end
 
 """ Calculate the bisection of a given angle, with A as the origin and B and C as points along opposite sides """
-function bisect_angle(A::Point2f0, B::Point2f0, C::Point2f0)
+function bisect_angle(A::Point2f0, B::Point2f0, C::Point2f0;
+                        cursorcolor=:red, color=:black, linewidth::Float32=1f0, cursorlw::Float32=0.025f0)
     #Let the angle BAC be the given recilineal angle
-    norm_B = norm(B-A)
-    norm_C = norm(C-A)
+    AB = B-A
+    AC = C-A
+    norm_B = norm(AB)
+    norm_C = norm(AC)
+
+    #aside: get angle BAC w/ calculus
+    getsign(x) = x >= 0 ? 1 : -1
+    fix_θ_0(vec, θ) = getsign(vec[2])*(θ == 0f0 && vec[1] < 0 ? π : θ)
+    B_θ = fix_θ_0(AB, acos(AB[1] / norm_B))
+    C_θ = fix_θ_0(AC, acos(AC[1] / norm_C))
+    θsign(angle1, angle2) = getsign(fix_angle(angle1) - fix_angle(angle2))
+    θ = θsign(C_θ, B_θ)*acos((AB⋅AC) / (norm_B*norm_C))
 
     #Thus it is required to bisect it
     #Let a point D be taken at random on AB
     #   We will choose the shorter of the length of B or C as vectors from A to decide
     norm_D = min(norm_B, norm_C)
-    D = B * norm_D / norm_B + A
+    D = AB * norm_D / norm_B + A
 
     #let AE be cut off from AC equal to AD  [I.3]
-    AE_circle = whole_circle(A, norm_D, 0f0, color=:pink, linewidth=5f0)
-    E = C * norm_D / norm_C + A
+    AE_circle = whole_circle(A, norm_D, B_θ, color=color, linewidth=linewidth, cursorcolor=cursorcolor)
+    E = AC * norm_D / norm_C + A
 
     #let DE be joined
-    ED = straight_line(E, D, color=:pink, linewidth=5f0, cursorwidth=0.025f0)
+    ED = straight_line(E, D, color=color, linewidth=linewidth, cursorcolor=cursorcolor, cursorwidth=cursorlw)
 
     #and on DE let the equilateral triangle DEF be constructed.
-    D_lines = equilateral_triangle(E, D, color=:pink, linewidth=5f0, cursorlw=0.025f0)
+    # funny point: need to figure out what direction the angle is pointing and draw the equilateral accordingly
+    ED_mid = (D + E) ./ 2
+    EDtoA = A - ED_mid
+    DE_vec = E-D
+    if (EDtoA[1] < 0 && DE_vec[2] > 0) || (EDtoA[1] > 0 && DE_vec[2] < 0)
+        D_lines = equilateral_triangle(E, D, color=color, linewidth=linewidth, cursorcolor=cursorcolor, cursorlw=cursorlw)
+    else
+        D_lines = equilateral_triangle(D, E, color=color, linewidth=linewidth, cursorcolor=cursorcolor, cursorlw=cursorlw)
+    end
     F = Point(D_lines)
 
-    #and let AF be joined
-    AF = straight_line(A, F, color=:green, linewidth=2f0, cursorwidth=0.025f0)
+    EuclidBisectAngle(AE_circle, ED, D_lines, F)
+end
 
-    EuclidBisectAngle(AE_circle, ED, D_lines, F, AF)
+""" Fill out the total drawing of a bisect angle operation """
+function fill_bisect_angle(bisect::EuclidBisectAngle)
+    fill_circle(bisect.AE_circle)
+    fill_line(bisect.ED)
+    fill_equilateral(bisect.D_lines)
 end
 
 """ Animate a previously calculation of a bisected angle """
 function animate_bisect_angle_(bisect::EuclidBisectAngle, hide_until::Float32, max_at::Float32, t::Float32;
                                     fade_start::Float32=0f0, fade_end::Float32=0f0)
-    d(n, ofn=4) = hide_until + (n-1)*(max_at - hide_until)/ofn
+    d(n, ofn=3) = hide_until + (n-1)*(max_at - hide_until)/ofn
+    df(n, ofn=3) = fade_start + (n-1)*(fade_end - fade_start)/ofn
     #animate AE
-    animate_circle(bisect.AE_circle, d(1), d(2), t, fade_start=d(2.5), fade_end=d(3))
+    animate_circle(bisect.AE_circle, d(1), d(2), t, fade_start=df(1), fade_end=df(2))
 
     #Animate DE
-    animate_line(bisect.ED, d(2), d(3), t, fade_start=d(3.5), fade_end=max_at)
+    animate_line(bisect.ED, d(2), d(3), t, fade_start=df(2), fade_end=fade_end)
 
     #Animate DEF
-    animate_equilateral(bisect.D_lines, d(3), d(4), t, fade_start=d(4.01), fade_end=max_at)
-
-    #Animate AF
-    animate_line(bisect.AF, d(4), max_at, t, fade_start=fade_start, fade_end=fade_end)
+    animate_equilateral(bisect.D_lines, d(3), d(4), t, fade_start=df(3), fade_end=fade_end)
 end
 
 """ Animate a previously calculation of a bisected angle """
@@ -263,3 +292,67 @@ function animate_bisect_angle(bisect::EuclidBisectAngle, hide_until, max_at, t;
     animate_bisect_angle_(bisect, Float32(hide_until), Float32(max_at), Float32(t),
                                     fade_start=Float32(fade_start), fade_end=Float32(fade_end))
 end
+
+
+""" Represents drawing a bisection of a finite line for Euclid """
+struct EuclidBisectLine
+    ABC::EuclidEquilTri
+    CD::EuclidBisectAngle
+end
+
+""" Get the end points of the bisecting line described """
+function Points(bisect::EuclidBisectLine)
+    [Point(bisect.ABC), Point(bisect.CD)]
+end
+
+""" Calculate the bisection of a given finite line, given by endpoints A and B """
+function bisect_line(A::Point2f0, B::Point2f0;
+                        cursorcolor=:red, color=:black, linewidth::Float32=1f0, cursorlw::Float32=0.025f0)
+    # Let AB be the given finite straight line
+    #Thus it is required to bisect the finite straight line AB.
+    #Let the equilateral triangle ABC be constructed on it [I.1],
+    ABC = equilateral_triangle(A, B, cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorlw=cursorlw)
+    C = Point(ABC)
+
+    #and let the angle ACB be bisected by the straight line CD [I.9];
+    CD = bisect_angle(C, B, A, cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorlw=cursorlw)
+
+    #I say that the straight line AB has been bisected at the point D.
+
+    #For, since AC is equal to CB, and CD is common,
+    #  the two sides AC, CD are equal to the two sides BC, CD respectively;
+    #and the angle ACD is equal to the angle BCD;
+    #    therefore the base AD is equal to the base BD [I.4]
+
+    #Therefore the given finite straight line has been bisected at D.
+
+    #QEF
+    EuclidBisectLine(ABC, CD)
+end
+
+""" Fill out the total drawing of a bisect line operation """
+function fill_bisect_line(bisect::EuclidBisectLine)
+    fill_equilateral(bisect.ABC)
+    fill_bisect_angle(bisect.CD)
+end
+
+""" Animate a previously calculation of a bisected line """
+function animate_bisect_line_(bisect::EuclidBisectLine, hide_until::Float32, max_at::Float32, t::Float32;
+                                    fade_start::Float32=0f0, fade_end::Float32=0f0)
+    d(n, ofn=2) = hide_until + (n-1)*(max_at - hide_until)/ofn
+    df(n, ofn=2) = fade_start + (n-1)*(fade_end - fade_start)/ofn
+    #animate ABC
+    animate_equilateral(bisect.ABC, d(1), d(2), t, fade_start=df(1), fade_end=df(2))
+
+    #Animate CD
+    animate_bisect_angle(bisect.CD, d(2), max_at, t, fade_start=df(2), fade_end=fade_end)
+end
+
+""" Animate a previously calculation of a bisected line """
+function animate_bisect_line(bisect::EuclidBisectLine, hide_until, max_at, t;
+                                    fade_start=0f0, fade_end=0f0)
+    animate_bisect_line_(bisect, Float32(hide_until), Float32(max_at), Float32(t),
+                                    fade_start=Float32(fade_start), fade_end=Float32(fade_end))
+end
+
+

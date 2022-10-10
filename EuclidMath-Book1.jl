@@ -7,7 +7,11 @@ function equilateral_from(A::Point2f, B::Point2f)
     #basically, the idea is pull the vector and rotate it 60° to find the 3rd equaliteral point
     v = B-A
     r = norm(v)
-    θ = π/3 + sign(v[2])*acos(v[1]/r)
+
+    fix_θ_0(vec, θ) = (vec[2] >= 0 ? 1 : -1)*(θ == 0f0 && vec[1] < 0 ? π : θ)
+    u_θ = fix_θ_0(v, acos(v[1] / r))
+
+    θ = π/3 + u_θ
     x, y = [r*cos(θ), r*sin(θ)]+A
     Point2f0(x, y)
 end;
