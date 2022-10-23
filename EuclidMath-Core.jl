@@ -10,6 +10,15 @@ fix_angle(∠) = begin
     ∠ret
 end
 
+
+""" Get the angle of a vector at origin A, going to B """
+function vector_angle(A::Point2, B::Point2)
+    v = B-A
+    r = norm(v)
+    θ = acos(v[1]/r)
+    (v[2] >= 0 ? 1 : -1)*(θ == 0f0 && v[1] < 0 ? π : θ)
+end
+
 """ Find a point that draw along a line indicated by vector B-A"""
 function get_line(A::Point2, B::Point2; move_out=0)
     v = B - A

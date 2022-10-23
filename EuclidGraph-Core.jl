@@ -50,9 +50,9 @@ function fill_line(line::EuclidLine)
     line.lw_t[] = lw
 end
 
-""" animate a line (this is an internal function specific)"""
-function animate_line_(line::EuclidLine, hide_until::Float32, max_at::Float32, t::Float32;
-                        fade_start::Float32=0f0, fade_end::Float32=0f0)
+""" animate a line for Euclid"""
+function animate_line(line::EuclidLine, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
+                        fade_start::AbstractFloat=0.0, fade_end::AbstractFloat=0.0)
     if t > hide_until
         new_B = line.A
         Pr = 0f0
@@ -75,13 +75,6 @@ function animate_line_(line::EuclidLine, hide_until::Float32, max_at::Float32, t
         line.Pr_t[] = Pr
         line.lw_t[] = lw
     end
-end
-
-""" animate a line for Euclid"""
-function animate_line(line::EuclidLine, hide_until, max_at, t;
-                        fade_start=0f0, fade_end=0f0)
-    # we need to make sure stuff is in Float32 or hell ensues...
-    animate_line_(line, Float32(hide_until), Float32(max_at), Float32(t), fade_start=Float32(fade_start), fade_end=Float32(fade_end))
 end
 
 
@@ -140,9 +133,9 @@ function fill_circle(circle::EuclidCircle)
 end
 
 
-""" Internal function to actually animate the drawing of a circle"""
-function animate_circle_(circle::EuclidCircle, hide_until::Float32, max_at::Float32, t::Float32;
-                            fade_start::Float32=0f0, fade_end::Float32=0f0)
+""" Animate the drawing of a circle"""
+function animate_circle(circle::EuclidCircle, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
+                            fade_start::AbstractFloat=0.0, fade_end::AbstractFloat=0.0)
     if t > hide_until
         drawwhole = false
         θ = circle.startθ
@@ -167,13 +160,6 @@ function animate_circle_(circle::EuclidCircle, hide_until::Float32, max_at::Floa
         circle.Pr_t[] = Pr
         circle.lw_t[] = lw
     end
-end
-
-""" Animate the drawing of a circle"""
-function animate_circle(circle::EuclidCircle, hide_until, max_at, t;
-                            fade_start=0f0, fade_end=0f0)
-    # another pain in the ass convert to Float32 bs
-    animate_circle_(circle, Float32(hide_until), Float32(max_at), Float32(t), fade_start=Float32(fade_start), fade_end=Float32(fade_end))
 end
 
 
@@ -256,14 +242,14 @@ end
 function fill_linecompare(line::EuclidLineCompare)
     line.moveAB[] = 1f0
     line.moveCD[] = 1f0
-    line.Pr_t[] = 0f0
+    line.Pr_t[] = 1f0
     line.lw_t[] = line.linewidth
     line.color[] = line.equals == true ? line.success : line.fail
 end
 
-""" Internal function to actually animate the drawing of a line comparison"""
-function animate_linecompare_(line::EuclidLineCompare, hide_until::Float32, max_at::Float32, t::Float32;
-                                fade_start::Float32=0f0, fade_end::Float32=0f0)
+""" Animate the drawing of a line comparison"""
+function animate_linecompare(line::EuclidLineCompare, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
+                                fade_start::AbstractFloat=0f0, fade_end::AbstractFloat=0f0)
     if t > hide_until
         moveAB = 0f0
         moveCD = 0f0
@@ -301,12 +287,6 @@ function animate_linecompare_(line::EuclidLineCompare, hide_until::Float32, max_
         line.lw_t[] = lw
         line.color[] = color
     end
-end
-
-""" Animate the drawing of a line comparison """
-function animate_linecompare(line::EuclidLineCompare, hide_until, max_at, t;
-                                fade_start=0f0, fade_end=0f0)
-    animate_linecompare_(line, Float32(hide_until), Float32(max_at), Float32(t), fade_start=Float32(fade_start), fade_end=Float32(fade_end))
 end
 
 
@@ -353,8 +333,7 @@ function compare_triangle(B::Point2f, A::Point2f, C::Point2f,
     #Setup the vectors and their equality...
     vecs = [B-A, C-A, E-D, F-D]
     norms = norm.(vecs)
-    fix_θ_0(vec, θ) = θ == 0f0 && vec[1] < 0 ? π : θ
-    θorigins = [fix_θ_0(vec, sign(vec[2])*acos(vec[1] / norms[i])) for (i, vec) in enumerate(vecs)]
+    θorigins = [vector_angle(A, B), vector_angle(A, C), vector_angle(D, E), vector_angle(D, F)]
 
     # This is the angles that we are working with (comparing and moving), and need a lil helper functions to find the sign of those angles
     θsign(angle1, angle2) = sign(fix_angle(angle1) - fix_angle(angle2))
@@ -407,14 +386,14 @@ end
 function fill_tricompare(tri::EuclidTriCompare)
     tri.moveBAC[] = 1f0
     tri.moveEDF[] = 1f0
-    tri.Pr_t[] = 0f0
+    tri.Pr_t[] = tri.cursorlinewidth
     tri.lw_t[] = tri.linewidth
     tri.color[] = tri.equals == true ? tri.success : tri.fail
 end
 
-""" Internal function to actually animate the drawing of a (tri)angle comparison"""
-function animate_tricompare_(tri::EuclidTriCompare, hide_until::Float32, max_at::Float32, t::Float32;
-                                fade_start::Float32=0f0, fade_end::Float32=0f0)
+""" Animate the drawing of a (tri)angle comparison"""
+function animate_tricompare(tri::EuclidTriCompare, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
+                                fade_start::AbstractFloat=0f0, fade_end::AbstractFloat=0f0)
     if t > hide_until
         moveBAC = 0f0
         moveEDF = 0f0
@@ -452,10 +431,4 @@ function animate_tricompare_(tri::EuclidTriCompare, hide_until::Float32, max_at:
         tri.lw_t[] = lw
         tri.color[] = color
     end
-end
-
-""" Animate the drawing of a (tri)angle comparison"""
-function animate_tricompare(tri::EuclidTriCompare, hide_until, max_at, t;
-                                fade_start=0f0, fade_end=0f0)
-    animate_tricompare_(tri, Float32(hide_until), Float32(max_at), Float32(t), fade_start=Float32(fade_start), fade_end=Float32(fade_end))
 end

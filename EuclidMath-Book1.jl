@@ -8,8 +8,7 @@ function equilateral_from(A::Point2f, B::Point2f)
     v = B-A
     r = norm(v)
 
-    fix_θ_0(vec, θ) = (vec[2] >= 0 ? 1 : -1)*(θ == 0f0 && vec[1] < 0 ? π : θ)
-    u_θ = fix_θ_0(v, acos(v[1] / r))
+    u_θ = vector_angle(A, B)
 
     θ = π/3 + u_θ
     x, y = [r*cos(θ), r*sin(θ)]+A
