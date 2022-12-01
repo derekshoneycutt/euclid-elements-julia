@@ -309,16 +309,23 @@ end
 
 
 """ Calculate an angle for comparison triangles, including 3 points representing angle, in terms of time t """
-function calc_∠_for_comp_triangle(endpoint, endθ, origin, θorigin, t::Observable{Float32}, θ, normB, normC)
+function calc_∠_for_comp_triangle(endpoint, endθ, origin, θorigin, t::Observable{Float32}, θ, normB, normC, B, C)
     calc_end = endpoint - origin
     calcnorm_end = norm(calc_end)
     calcu_end = calc_end / calcnorm_end
 
-    θ_t = @lift(((endθ - θorigin) * $t) + θorigin)
     calc_t = @lift(calcu_end .* (calcnorm_end * $t) + origin)
-    B_t = @lift(normB * [cos($θ_t), sin($θ_t)] + $calc_t)
-    Cθ = @lift($θ_t + (θ >= 0 ? θ : θ - ($t * 2 * θ)))
-    C_t = @lift(normC * [cos($Cθ), sin($Cθ)] + $calc_t)
+
+    B_end = (normB * [cos(endθ), sin(endθ)] + endpoint) - B
+    Bnorm_end = norm(B_end)
+    calcB_end = B_end / Bnorm_end
+    B_t = @lift(calcB_end .* (Bnorm_end * $t) + B)
+
+    Cθ = endθ + (θ >= 0 ? θ : θ - (2 * θ))
+    C_end = (normC * [cos(Cθ), sin(Cθ)] + endpoint) - C
+    Cnorm_end = norm(C_end)
+    calcC_end = C_end / Cnorm_end
+    C_t = @lift(calcC_end .* (Cnorm_end * $t) + C)
 
     (calc_t, B_t, C_t)
 end
@@ -333,7 +340,7 @@ function compare_triangle(B::Point2f, A::Point2f, C::Point2f,
     #Setup the vectors and their equality...
     vecs = [B-A, C-A, E-D, F-D]
     norms = norm.(vecs)
-    θorigins = [vector_angle(A, B), vector_angle(A, C), vector_angle(D, E), vector_angle(D, F)]
+    θorigins = fix_angle.([vector_angle(A, B), vector_angle(A, C), vector_angle(D, E), vector_angle(D, F)])
 
     # This is the angles that we are working with (comparing and moving), and need a lil helper functions to find the sign of those angles
     θsign(angle1, angle2) = sign(fix_angle(angle1) - fix_angle(angle2))
@@ -352,8 +359,8 @@ function compare_triangle(B::Point2f, A::Point2f, C::Point2f,
                                 Observable(color), successcolor, failcolor, color)
 
     # Calculate the angle in terms of time for animations
-    (A_t, B_t, C_t) = calc_∠_for_comp_triangle(endpoint, endθ, A, θorigins[1], compare.moveBAC, θs[1], norms[1], norms[2])
-    (D_t, E_t, F_t) = calc_∠_for_comp_triangle(endpoint, endθ, D, θorigins[3], compare.moveEDF, θs[2], norms[3], norms[4])
+    (A_t, B_t, C_t) = calc_∠_for_comp_triangle(endpoint, endθ, A, θorigins[1], compare.moveBAC, θs[1], norms[1], norms[2], B, C)
+    (D_t, E_t, F_t) = calc_∠_for_comp_triangle(endpoint, endθ, D, θorigins[3], compare.moveEDF, θs[2], norms[3], norms[4], E, F)
 
     # Finally, draw the lines, starting with the cursor wires
     if cursorlinewidth > 0

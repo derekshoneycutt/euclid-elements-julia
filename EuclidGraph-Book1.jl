@@ -335,9 +335,12 @@ struct EuclidBisectLine
     CD::EuclidBisectAngle
 end
 
-""" Get the end points of the bisecting line described """
+""" Get the end points and middle point of the bisecting line described """
 function Points(bisect::EuclidBisectLine)
-    [Point(bisect.ABC), Point(bisect.CD)]
+    C = Point(bisect.ABC)
+    F = Point(bisect.CD)
+    bisection = (C .+ F) ./ 2
+    [C, F, bisection]
 end
 
 """ Calculate the bisection of a given finite line, given by endpoints A and B """
