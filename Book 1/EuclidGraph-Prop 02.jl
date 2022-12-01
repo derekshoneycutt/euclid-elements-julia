@@ -1,7 +1,3 @@
-include("../EuclidMath-Book1.jl")
-include("../EuclidGraph-Core.jl")
-
-include("EuclidGraph-Prop 01.jl")
 
 """ Represent drawing one line equal to another, existing line, by Euclid """
 struct EuclidEqualLine

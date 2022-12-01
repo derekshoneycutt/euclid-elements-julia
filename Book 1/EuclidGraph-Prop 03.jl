@@ -1,11 +1,3 @@
-include("../EuclidMath-Book1.jl")
-include("../EuclidGraph-Core.jl")
-
-include("EuclidGraph-Prop 01.jl")
-include("EuclidGraph-Prop 02.jl")
-
-
-
 
 """ Represent Euclid's method for cutting a line into a segment equal to another, shorter line"""
 struct EuclidCutLine

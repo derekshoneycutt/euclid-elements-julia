@@ -1,11 +1,3 @@
-include("../EuclidMath-Book1.jl")
-using Symbolics;
-using Latexify;
-using Colors;
-using GLMakie;
-
-
-
 
 """ Representation of an animation for comparing 2 triangles """
 struct EuclidTriCompare

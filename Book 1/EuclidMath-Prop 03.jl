@@ -1,5 +1,3 @@
-include("../EuclidMath-Core.jl")
-
 
 """ I.3 Find the point that would cut a line equal """
 function cut_line(A1::Point2f, B1::Point2f, A2::Point2f, B2::Point2f)

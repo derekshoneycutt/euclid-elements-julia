@@ -1,6 +1,3 @@
-include("../EuclidMath-Core.jl")
-
-
 
 """ I.1 Find the third point that constructs an equilateral triangle from 2 points"""
 function equilateral_from(A::Point2f, B::Point2f)

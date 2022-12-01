@@ -1,8 +1,3 @@
-include("../EuclidMath-Book1.jl")
-using Symbolics;
-using Latexify;
-using Colors;
-using GLMakie;
 
 """ Describe drawing a line for Euclid functions"""
 struct EuclidLine

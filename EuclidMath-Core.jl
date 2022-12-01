@@ -1,5 +1,4 @@
-using GeometryBasics;
-using LinearAlgebra;
+
 
 """ Fix an angle so that it is always 0 <= ∠ <= 2π"""
 fix_angle(∠) = begin

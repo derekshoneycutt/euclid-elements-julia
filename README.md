@@ -16,8 +16,4 @@ Each proposition is primarily done with one, very simple unit version to figure 
 
 `AddPackages.jl` will add all of the Julia packages to your current setup that are required. This is also a great reference for what packages are required to build the full notebooks in this project.
 
-`EuclidElements.jl` is a shorthand way to include a bunch of utility stuffs
-
-`EuclidMath-*.jl` are individual files in which specific mathematical functions derived from Euclid's Elements are defined
-
-`EuclidGraph-*.jl` are individual files for code used in graphing Euclid's Elements, including and especially animations
+`EuclidElements.jl` is a shorthand way to include everything, and it is the preferred way to include any of the shared code.

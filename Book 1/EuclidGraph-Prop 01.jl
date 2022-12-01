@@ -1,6 +1,3 @@
-include("../EuclidMath-Book1.jl")
-include("../EuclidGraph-Core.jl")
-
 
 """ Describe a representation of drawing an equilateral triangle via Euclid """
 struct EuclidEquilTri

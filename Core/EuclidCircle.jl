@@ -1,10 +1,3 @@
-include("../EuclidMath-Book1.jl")
-
-using Symbolics;
-using Latexify;
-using Colors;
-using GLMakie;
-
 
 """ Description for drawing a circle in Euclid"""
 struct EuclidCircle

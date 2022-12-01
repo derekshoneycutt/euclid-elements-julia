@@ -1,11 +1,3 @@
-include("../EuclidMath-Book1.jl")
-include("../EuclidGraph-Core.jl")
-
-include("EuclidGraph-Prop 01.jl")
-include("EuclidGraph-Prop 02.jl")
-include("EuclidGraph-Prop 03.jl")
-
-
 
 """ Representation of an animation for bisecting an angle """
 struct EuclidBisectAngle

@@ -1,11 +1,3 @@
-include("../EuclidMath-Book1.jl")
-include("../EuclidGraph-Core.jl")
-
-include("EuclidGraph-Prop 01.jl")
-include("EuclidGraph-Prop 02.jl")
-include("EuclidGraph-Prop 03.jl")
-include("EuclidGraph-Prop 09.jl")
-
 
 """ Represents drawing a bisection of a finite line for Euclid """
 struct EuclidBisectLine

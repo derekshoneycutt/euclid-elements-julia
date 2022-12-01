@@ -1,7 +1,3 @@
-include("../EuclidMath-Core.jl")
-
-include("EuclidMath-Prop 01.jl")
-
 
 """ I.2 At one given point, get a point to draw a line equal to a line from 2 given points"""
 function equal_line(A::Point2f, B::Point2f, C::Point2f)
