@@ -1,5 +1,5 @@
 
-""" Represents drawing a bisection of a finite line for Euclid """
+""" Represents drawing a perpendicular point off of a point on line for Euclid """
 struct EuclidPerpendicular
     DE::EuclidCircle
     DEF::EuclidEquilTri
