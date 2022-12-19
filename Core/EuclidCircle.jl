@@ -13,7 +13,7 @@ struct EuclidCircle
 end
 
 """ Setup drawing for a whole circle (potentially to be animated)"""
-function whole_circle(A::Point2f, r::Float32, startθ::Float32;
+function whole_circle(A::Point2f, r::AbstractFloat, startθ::AbstractFloat;
                         cursorcolor=:red, color=:black, linewidth::Float32=1f0, cursorwidth::Float32=5f0)
     split_θ = fix_angle(startθ)
 

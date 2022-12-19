@@ -17,18 +17,18 @@ end
 
 """ Construct an equilateral triangle on top of a given line AB, via Euclid """
 function equilateral_triangle(A::Point2f0, B::Point2f0;
-                                cursorcolor=:red, color=:black, linewidth::Float32=1f0, cursorlw=0.1f0)
+                                cursorcolor=:red, color=:black, linewidth::Float32=1f0, cursorlw=0.1f0, circlecursorlw=5f0)
     # Let AB be the given finite straight line
 
     # Thus it is required to construct an equilateral triangle on the straight line AB.
     # With center A and distance AB let the circle BCD be described; [Post. 3]
     r = norm(B-A)
     startθ1 = vector_angle(A, B)
-    BCD = whole_circle(A, r, startθ1, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    BCD = whole_circle(A, r, startθ1, cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorwidth=circlecursorlw)
 
     # again, with centre B and distance BA let the circle ACE be described; [Post. 3]
     startθ2 = vector_angle(B, A)
-    ACE = whole_circle(B, r, startθ2, cursorcolor=cursorcolor, color=color, linewidth=linewidth)
+    ACE = whole_circle(B, r, startθ2, cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorwidth=circlecursorlw)
 
     # and from the point C, in which the circles cut one another, 
     # to the points A, B let the straight lines CA, CB be joined [Post. 1]
