@@ -105,6 +105,15 @@ function fill_tricompare(tri::EuclidTriCompare)
     tri.color[] = tri.equals == true ? tri.success : tri.fail
 end
 
+""" Reset drawing a completed triangle comparison so it is not shown for Euclid """
+function reset_tricompare(tri::EuclidTriCompare)
+    tri.moveBAC[] = 0f0
+    tri.moveEDF[] = 0f0 
+    tri.Pr_t[] = 0f0
+    tri.lw_t[] = 0f0
+    tri.color[] = tri.drawing
+end
+
 """ Animate the drawing of a (tri)angle comparison"""
 function animate_tricompare(tri::EuclidTriCompare, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
                                 fade_start::AbstractFloat=0f0, fade_end::AbstractFloat=0f0)

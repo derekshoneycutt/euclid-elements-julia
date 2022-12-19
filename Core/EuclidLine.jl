@@ -45,6 +45,13 @@ function fill_line(line::EuclidLine)
     line.lw_t[] = lw
 end
 
+""" Reset the display of a line to not shown """
+function reset_line(line::EuclidLine)
+    line.B_t[] = A
+    line.Pr_t[] = 0f0
+    line.lw_t[] = line.linewidth
+end
+
 """ animate a line for Euclid"""
 function animate_line(line::EuclidLine, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
                         fade_start::AbstractFloat=0.0, fade_end::AbstractFloat=0.0)

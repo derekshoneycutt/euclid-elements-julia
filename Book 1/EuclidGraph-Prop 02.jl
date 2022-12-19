@@ -79,6 +79,16 @@ function fill_equivalent(line::EuclidEqualLine)
     fill_circle(line.GKL)
 end
 
+""" Reset drawing for an equal line, by Euclid"""
+function reset_equivalent(line::EuclidEqualLine)
+    reset_line(line.AB)
+    reset_equilateral(line.D)
+    reset_line(line.DE)
+    reset_line(line.DF)
+    reset_circle(line.CGH)
+    reset_circle(line.GKL)
+end
+
 """ Animate drawing an equivalent line by Euclid"""
 function animate_equivalent(line::EuclidEqualLine, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
                                 fade_start::AbstractFloat=0f0, fade_end::AbstractFloat=0f0)

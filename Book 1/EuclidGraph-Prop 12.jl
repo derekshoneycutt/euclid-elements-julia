@@ -69,12 +69,6 @@ end
 
 """ Fill out the total drawing of a perpendicular line to a point operation """
 function fill_perpendicular_to_point(perp::EuclidPerpendicularToPoint)
-    EFG::EuclidCircle
-    HLines::EuclidBisectLine
-    HBisect::EuclidLine
-    CG::EuclidLine
-    CE::EuclidLine
-    CH::EuclidLine
     fill_circle(perp.EFG)
     fill_bisect_line(perp.HLines)
     fill_line(perp.HBisect)
@@ -82,6 +76,18 @@ function fill_perpendicular_to_point(perp::EuclidPerpendicularToPoint)
         fill_line(perp.CG)
         fill_line(perp.CE)
         fill_line(perp.CH)
+    end
+end
+
+""" Reset drawing of a perpendicular line to a point operation """
+function reset_perpendicular_to_point(perp::EuclidPerpendicularToPoint)
+    reset_circle(perp.EFG)
+    reset_bisect_line(perp.HLines)
+    reset_line(perp.HBisect)
+    if perp.DoCH
+        reset_line(perp.CG)
+        reset_line(perp.CE)
+        reset_line(perp.CH)
     end
 end
 

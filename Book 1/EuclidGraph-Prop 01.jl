@@ -61,6 +61,14 @@ function fill_equilateral(tri::EuclidEquilTri)
     fill_line(tri.BC)
 end
 
+""" Reset drawing an equilateral triangle by Euclid """
+function reset_equilateral(tri::EuclidEquilTri)
+    reset_circle(tri.BCD)
+    reset_circle(tri.ACE)
+    reset_line(tri.AC)
+    reset_line(tri.BC)
+end
+
  """Animate the drawing of an equilateral triangle by Euclid"""
 function animate_equilateral(tri::EuclidEquilTri, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
                                 fade_start::AbstractFloat=0f0, fade_end::AbstractFloat=0f0)

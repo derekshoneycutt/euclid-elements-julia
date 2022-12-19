@@ -53,6 +53,13 @@ function fill_circle(circle::EuclidCircle)
     circle.lw_t[] = (circle.linewidth)
 end
 
+""" Reset a completed circle to not drawn for Euclid """
+function reset_circle(circle::EuclidCircle)
+    circle.drawwhole[] = false
+    circle.Pr_t[] = 0f0
+    circle.lw_t[] = 0f0
+end
+
 
 """ Animate the drawing of a circle"""
 function animate_circle(circle::EuclidCircle, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;

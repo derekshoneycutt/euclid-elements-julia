@@ -82,6 +82,15 @@ function fill_linecompare(line::EuclidLineCompare)
     line.color[] = line.equals == true ? line.success : line.fail
 end
 
+""" Reset drawing a line comparison so it is not shown for Euclid """
+function reset_linecompare(line::EuclidLineCompare)
+    line.moveAB[] = 0f0
+    line.moveCD[] = 0f0
+    line.Pr_t[] = 0f0
+    line.lw_t[] = 0f0
+    line.color[] = line.drawing
+end
+
 """ Animate the drawing of a line comparison"""
 function animate_linecompare(line::EuclidLineCompare, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
                                 fade_start::AbstractFloat=0f0, fade_end::AbstractFloat=0f0)

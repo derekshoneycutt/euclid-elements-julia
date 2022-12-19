@@ -76,6 +76,13 @@ function fill_bisect_angle(bisect::EuclidBisectAngle)
     fill_equilateral(bisect.D_lines)
 end
 
+""" Reset drawing of a bisect angle operation """
+function reset_bisect_angle(bisect::EuclidBisectAngle)
+    reset_circle(bisect.AE_circle)
+    reset_line(bisect.ED)
+    reset_equilateral(bisect.D_lines)
+end
+
 """ Animate a previously calculation of a bisected angle """
 function animate_bisect_angle(bisect::EuclidBisectAngle, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
                                     fade_start::AbstractFloat=0f0, fade_end::AbstractFloat=0f0)

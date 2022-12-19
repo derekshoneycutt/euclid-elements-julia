@@ -55,6 +55,12 @@ function fill_cut_line(line::EuclidCutLine)
     fill_circle(line.DEF)
 end
 
+""" Reset drawing of a cut line, in all of its parts """
+function reset_cut_line(line::EuclidCutLine)
+    reset_equivalent(line.EqualLine)
+    reset_circle(line.DEF)
+end
+
 """ Animate everything to show a line being cut equal to another, shorter one"""
 function animate_cut_line(line::EuclidCutLine, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
                                 fade_start::AbstractFloat=0f0, fade_end::AbstractFloat=0f0)

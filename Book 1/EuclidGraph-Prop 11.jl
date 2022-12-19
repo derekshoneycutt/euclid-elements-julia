@@ -66,6 +66,12 @@ function fill_perpendicular(perp::EuclidPerpendicular)
     fill_equilateral(perp.DEF)
 end
 
+""" Reset drawing of a perpendicular operation """
+function reset_perpendicular(perp::EuclidPerpendicular)
+    reset_circle(perp.DE)
+    reset_equilateral(perp.DEF)
+end
+
 """ Animate a previously calculation of a perpendicular line """
 function animate_perpendicular(perp::EuclidPerpendicular, hide_until::AbstractFloat, max_at::AbstractFloat, t::AbstractFloat;
                                     fade_start::AbstractFloat=0f0, fade_end::AbstractFloat=0f0)
