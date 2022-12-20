@@ -13,7 +13,7 @@ end
 """ Calculate the perpendicular line from a point C on a given line, AB """
 function perpendicular(A::Point2f0, B::Point2f0, C::Point2f0;
                         cursorcolor=:red, color=:black,
-                        linewidth::Float32=1f0, cursorwidth::Float32=0.025f0)
+                        linewidth::Float32=1f0, cursorwidth::Float32=5f0, cursorlw::Float32=0.05f0)
     # Let AB be the given straight line, and C the given point on it.
     
     # ASIDE : some useful info about AC and AB
@@ -35,7 +35,7 @@ function perpendicular(A::Point2f0, B::Point2f0, C::Point2f0;
     DE = whole_circle(C, AC_norm-AD_norm, vector_angle(C, D), cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorwidth=cursorwidth)
 
     # on DE let the equilateral triangle FDE be constructed. [I.1]
-    DEF = equilateral_triangle(D, E, cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorlw=cursorwidth, circlecursorlw=cursorwidth)
+    DEF = equilateral_triangle(D, E, cursorcolor=cursorcolor, color=color, linewidth=linewidth, cursorlw=cursorlw, circlecursorlw=cursorwidth)
 
 
     # and let FC be joined;
