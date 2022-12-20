@@ -21,14 +21,6 @@ function bisect_angle(A::Point2f0, B::Point2f0, C::Point2f0;
     norm_B = norm(AB)
     norm_C = norm(AC)
 
-    #aside: get angle BAC w/ calculus
-    getsign(x) = x >= 0 ? 1 : -1
-    fix_θ_0(vec, θ) = getsign(vec[2])*(θ == 0f0 && vec[1] < 0 ? π : θ)
-    B_θ = fix_θ_0(AB, acos(AB[1] / norm_B))
-    C_θ = fix_θ_0(AC, acos(AC[1] / norm_C))
-    θsign(angle1, angle2) = getsign(fix_angle(angle1) - fix_angle(angle2))
-    θ = θsign(C_θ, B_θ)*acos((AB⋅AC) / (norm_B*norm_C))
-
     #Thus it is required to bisect it
     #Let a point D be taken at random on AB
     #   We will choose the shorter of the length of B or C as vectors from A to decide
@@ -36,7 +28,8 @@ function bisect_angle(A::Point2f0, B::Point2f0, C::Point2f0;
     D = AB * norm_D / norm_B + A
 
     #let AE be cut off from AC equal to AD  [I.3]
-    AE_circle = whole_circle(A, norm_D, B_θ, color=color, linewidth=linewidth, cursorcolor=cursorcolor)
+    Bθ = vector_angle(A, B)
+    AE_circle = whole_circle(A, norm_D, Bθ, color=color, linewidth=linewidth, cursorcolor=cursorcolor)
     E = AC * norm_D / norm_C + A
 
     #let DE be joined

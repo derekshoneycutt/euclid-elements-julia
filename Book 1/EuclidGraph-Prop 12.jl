@@ -38,6 +38,19 @@ function perpendicular_to_point(A::Point2f0, B::Point2f0, C::Point2f0;
     # and with centre C and distance CD let the circle EFG be described; [Post. 3]
     EFG = whole_circle(C, CD_norm, vector_angle(C, D), color=color, linewidth=linewidth, cursorwidth=cursorlw)
 
+    #       ASIDE: We need to find E and F that intersect the EFG and AB
+    #               This is done with the quadratic formula acting on the formula of the line and the circle
+    m = (B[2]-A[2])/(B[1]-A[1])
+    b = B[2]-m*B[1]
+    quad_a = m^2 + 1
+    quad_b = 2*(b*m - C[1] - C[2]*m)
+    quad_c = C[1]^2 + C[2]^2 - CD_norm^2 + b^2 - 2*b*C[2]
+    # quad_a * x^2  + quad_b * x + quad_c = 0
+    E_x = (-quad_b + √(quad_b^2 - 4*quad_a*quad_c)) / (2*quad_a)
+    G_x = (-quad_b - √(quad_b^2 - 4*quad_a*quad_c)) / (2*quad_a)
+    E = Point2f0(E_x, m * E_x + b)
+    G = Point2f0(G_x, m * G_x + b)
+
     # let the straight line EG be bisected at H, [I. 10]
     H_lines = bisect_line(E, G, color=color, linewidth=linewidth, cursorlw=cursorwidth)
     H_C, H_F, H = Points(H_lines)
